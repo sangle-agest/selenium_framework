@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- Define properties -->
+    <property name="LOG_DIR" value="logs"/>
+    <property name="LOG_FILE" value="${LOG_DIR}/test.log"/>
+    <property name="ARCHIVE_DIR" value="${LOG_DIR}/archive"/>
+    
+    <!-- Console appender -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %highlight(%-5level) [%thread] %cyan(%logger{36}) - %msg%n</pattern>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
+    </appender>
+    
+    <!-- File appender for all logs -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_FILE}</file>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n</pattern>
+        </encoder>
+        
+        <!-- Rolling policy -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${ARCHIVE_DIR}/test.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>10MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
+            
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>10MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+        </rollingPolicy>
+    </appender>
+    
+    <!-- Error file appender for errors only -->
+    <appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/error.log</file>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n%ex</pattern>
+        </encoder>
+        
+        <!-- Only log ERROR level and above -->
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+        
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${ARCHIVE_DIR}/error.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>5MB</maxFileSize>
+            <maxHistory>60</maxHistory>
+            
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>5MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+        </rollingPolicy>
+    </appender>
+    
+    <!-- Test results appender -->
+    <appender name="TEST_RESULTS" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/test-results.log</file>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n</pattern>
+        </encoder>
+        
+        <!-- Filter for test-specific logs -->
+        <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+            <evaluator class="ch.qos.logback.classic.boolex.JaninoEventEvaluator">
+                <expression>
+                    return message.contains("TEST STEP") || 
+                           message.contains("TEST RESULT") || 
+                           message.contains("ASSERTION") ||
+                           message.contains("TEST DATA");
+                </expression>
+            </evaluator>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+        
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${ARCHIVE_DIR}/test-results.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+    </appender>
+    
+    <!-- Performance appender -->
+    <appender name="PERFORMANCE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/performance.log</file>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} - %msg%n</pattern>
+        </encoder>
+        
+        <!-- Filter for performance logs -->
+        <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+            <evaluator class="ch.qos.logback.classic.boolex.JaninoEventEvaluator">
+                <expression>
+                    return message.contains("PERFORMANCE") || message.contains("SLOW OPERATION");
+                </expression>
+            </evaluator>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+        
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${ARCHIVE_DIR}/performance.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>7</maxHistory>
+        </rollingPolicy>
+    </appender>
+
+    <!-- Logger configurations -->
+    
+    <!-- Root logger -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE"/>
+        <appender-ref ref="ERROR_FILE"/>
+        <appender-ref ref="TEST_RESULTS"/>
+        <appender-ref ref="PERFORMANCE"/>
+    </root>
+    
+    <!-- Framework loggers -->
+    <logger name="core" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE"/>
+        <appender-ref ref="ERROR_FILE"/>
+        <appender-ref ref="TEST_RESULTS"/>
+        <appender-ref ref="PERFORMANCE"/>
+    </logger>
+    
+    <logger name="pages" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE"/>
+        <appender-ref ref="ERROR_FILE"/>
+        <appender-ref ref="TEST_RESULTS"/>
+    </logger>
+    
+    <logger name="tests" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE"/>
+        <appender-ref ref="ERROR_FILE"/>
+        <appender-ref ref="TEST_RESULTS"/>
+        <appender-ref ref="PERFORMANCE"/>
+    </logger>
+    
+    <!-- Third-party library loggers (reduce verbosity) -->
+    <logger name="com.codeborne.selenide" level="INFO"/>
+    <logger name="org.seleniumhq.selenium" level="INFO"/>
+    <logger name="io.netty" level="WARN"/>
+    <logger name="org.asynchttpclient" level="WARN"/>
+    <logger name="com.jayway.jsonpath" level="WARN"/>
+    <logger name="org.apache.http" level="WARN"/>
+    <logger name="httpclient.wire" level="WARN"/>
+    
+    <!-- TestNG loggers -->
+    <logger name="org.testng" level="INFO"/>
+    
+    <!-- Allure loggers -->
+    <logger name="io.qameta.allure" level="INFO"/>
+    
+    <!-- JVM and system loggers -->
+    <logger name="sun.rmi" level="WARN"/>
+    <logger name="javax.management" level="WARN"/>
+    
+    <!-- Development/Debug configurations -->
+    <!-- Uncomment these for more detailed debugging -->
+    <!--
+    <logger name="core.elements" level="TRACE"/>
+    <logger name="core.utils" level="TRACE"/>
+    <logger name="core.driver" level="TRACE"/>
+    -->
+    
+    <!-- Environment-specific configurations -->
+    <!-- These can be overridden via system properties or environment variables -->
+    <if condition='property("environment").equals("debug")'>
+        <then>
+            <root level="DEBUG">
+                <appender-ref ref="CONSOLE"/>
+                <appender-ref ref="FILE"/>
+                <appender-ref ref="ERROR_FILE"/>
+                <appender-ref ref="TEST_RESULTS"/>
+                <appender-ref ref="PERFORMANCE"/>
+            </root>
+        </then>
+    </if>
+    
+    <if condition='property("environment").equals("ci")'>
+        <then>
+            <!-- Reduce console logging in CI environment -->
+            <appender name="CI_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+                <encoder>
+                    <pattern>%d{HH:mm:ss.SSS} %-5level [%thread] %logger{20} - %msg%n</pattern>
+                </encoder>
+                <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+                    <level>WARN</level>
+                </filter>
+            </appender>
+            
+            <root level="INFO">
+                <appender-ref ref="CI_CONSOLE"/>
+                <appender-ref ref="FILE"/>
+                <appender-ref ref="ERROR_FILE"/>
+                <appender-ref ref="TEST_RESULTS"/>
+                <appender-ref ref="PERFORMANCE"/>
+            </root>
+        </then>
+    </if>
+</configuration>

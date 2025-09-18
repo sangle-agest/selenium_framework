@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+
+<suite name="Selenium Automation Test Suite" parallel="tests" thread-count="3" verbose="1">
+    
+    <!-- Groups -->
+    <groups>
+        <run>
+            <include name="smoke"/>
+            <include name="regression"/>
+            <include name="checkboxes"/>
+            <include name="dropdown"/>
+            <include name="dragdrop"/>
+            <include name="table"/>
+            <include name="slider"/>
+            <include name="buttons"/>
+            <include name="textbox"/>
+            <include name="fileupload"/>
+            <include name="javascript"/>
+            <include name="windows"/>
+            <include name="alerts"/>
+            <include name="dynamic"/>
+            <include name="iframe"/>
+            <include name="navigation"/>
+            <include name="framework"/>
+            <!-- Exclude groups as needed -->
+            <!-- <exclude name="slow"/> -->
+        </run>
+    </groups>
+    
+    <!-- Listeners -->
+    <listeners>
+        <listener class-name="core.reporting.AllureListener"/>
+        <listener class-name="org.testng.reporters.EmailableReporter"/>
+    </listeners>
+    
+    <!-- Suite-level parameters -->
+    <parameter name="browser" value="chrome"/>
+    <parameter name="headless" value="false"/>
+    <parameter name="environment" value="local"/>
+    
+    <!-- Smoke Test Suite -->
+    <test name="Smoke Tests" parallel="methods" thread-count="2">
+        <parameter name="testType" value="smoke"/>
+        <groups>
+            <run>
+                <include name="smoke"/>
+            </run>
+        </groups>
+        <classes>
+            <class name="tests.TheInternetTests">
+                <methods>
+                    <include name="testCheckboxInteractions"/>
+                    <include name="testDropdownInteractions"/>
+                    <include name="testBasicNavigation"/>
+                    <include name="testFrameworkCapabilities"/>
+                </methods>
+            </class>
+            <class name="tests.AdvancedElementsTests">
+                <methods>
+                    <include name="testElementProperties"/>
+                </methods>
+            </class>
+        </classes>
+    </test>
+    
+    <!-- The Internet Test Suite -->
+    <test name="The Internet Tests" parallel="methods" thread-count="2">
+        <parameter name="testType" value="theinternet"/>
+        <groups>
+            <run>
+                <include name="regression"/>
+                <include name="checkboxes"/>
+                <include name="dropdown"/>
+                <include name="dragdrop"/>
+                <include name="navigation"/>
+                <include name="framework"/>
+            </run>
+        </groups>
+        <classes>
+            <class name="tests.TheInternetTests"/>
+        </classes>
+    </test>
+    
+    <!-- Advanced Elements Test Suite -->
+    <test name="Advanced Elements Tests" parallel="methods" thread-count="2">
+        <parameter name="testType" value="advancedelements"/>
+        <groups>
+            <run>
+                <include name="regression"/>
+                <include name="table"/>
+                <include name="slider"/>
+                <include name="buttons"/>
+                <include name="textbox"/>
+                <include name="framework"/>
+            </run>
+        </groups>
+        <classes>
+            <class name="tests.AdvancedElementsTests"/>
+        </classes>
+    </test>
+    
+    <!-- Specialized Features Test Suite -->
+    <test name="Specialized Features Tests" parallel="methods" thread-count="2">
+        <parameter name="testType" value="specializedfeatures"/>
+        <groups>
+            <run>
+                <include name="regression"/>
+                <include name="fileupload"/>
+                <include name="javascript"/>
+                <include name="windows"/>
+                <include name="alerts"/>
+                <include name="dynamic"/>
+                <include name="iframe"/>
+            </run>
+        </groups>
+        <classes>
+            <class name="tests.SpecializedFeaturesTests"/>
+        </classes>
+    </test>
+    
+    <!-- Full Regression Test Suite -->
+    <test name="Full Regression Tests" parallel="classes" thread-count="3">
+        <parameter name="testType" value="fullregression"/>
+        <groups>
+            <run>
+                <include name="regression"/>
+            </run>
+        </groups>
+        <classes>
+            <class name="tests.LoginTests"/>
+            <class name="tests.TheInternetTests"/>
+            <class name="tests.AdvancedElementsTests"/>
+            <class name="tests.SpecializedFeaturesTests"/>
+        </classes>
+    </test>
+
+</suite>
