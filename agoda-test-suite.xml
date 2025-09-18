@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+
+<suite name="Agoda Test Suite" parallel="tests" thread-count="2" verbose="1">
+    <parameter name="browser" value="chrome"/>
+    <parameter name="headless" value="false"/>
+    
+    <listeners>
+        <listener class-name="core.listeners.TestListener"/>
+        <listener class-name="core.listeners.AllureListener"/>
+        <listener class-name="core.listeners.TestNGLogListener"/>
+    </listeners>
+
+    <test name="TC01 - Search and Sort Hotel" preserve-order="true">
+        <parameter name="testDescription" value="Search for hotels in Phuket and sort by price (low to high)"/>
+        <classes>
+            <class name="tests.agoda.TC01_SearchAndSortHotelTest"/>
+        </classes>
+    </test>
+
+    <test name="TC02 - Search and Filter Hotel" preserve-order="true">
+        <parameter name="testDescription" value="Search for hotels in Phuket and apply Resort and 5-star filters"/>
+        <classes>
+            <class name="tests.agoda.TC02_SearchAndFilterHotelTest"/>
+        </classes>
+    </test>
+
+    <test name="TC03 - Flexible Date Search" preserve-order="true">
+        <parameter name="testDescription" value="Demonstrate flexible date selection with different days and durations"/>
+        <classes>
+            <class name="tests.agoda.TC03_FlexibleDateSearchTest"/>
+        </classes>
+    </test>
+
+</suite>

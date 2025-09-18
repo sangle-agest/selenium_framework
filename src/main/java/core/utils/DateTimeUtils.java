@@ -8,6 +8,8 @@ import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalAdjusters;
+import java.time.DayOfWeek;
 
 /**
  * DateTimeUtils provides utility methods for date and time operations
@@ -46,6 +48,226 @@ public class DateTimeUtils {
             logger.error("Failed to get current date: {}", e.getMessage());
             throw new RuntimeException("Failed to get current date", e);
         }
+    }
+
+    /**
+     * Get next Friday date
+     * @return Next Friday date in yyyy-MM-dd format
+     */
+    @Step("Get next Friday date")
+    public static String getNextFriday() {
+        return getNextFriday(DATE_FORMAT);
+    }
+
+    /**
+     * Get next Friday date with custom format
+     * @param formatter Date formatter
+     * @return Next Friday date in specified format
+     */
+    @Step("Get next Friday date with format")
+    public static String getNextFriday(DateTimeFormatter formatter) {
+        try {
+            LocalDate today = LocalDate.now();
+            LocalDate nextFriday = today.with(DayOfWeek.FRIDAY);
+            
+            // If today is Friday or later in the week, get next Friday
+            if (today.getDayOfWeek().getValue() >= DayOfWeek.FRIDAY.getValue()) {
+                nextFriday = nextFriday.plusWeeks(1);
+            }
+            
+            String date = nextFriday.format(formatter);
+            logger.debug("Next Friday: {}", date);
+            return date;
+        } catch (Exception e) {
+            logger.error("Failed to get next Friday: {}", e.getMessage());
+            throw new RuntimeException("Failed to get next Friday", e);
+        }
+    }
+
+    /**
+     * Get date that is 3 days from next Friday
+     * @return Date 3 days from next Friday in yyyy-MM-dd format
+     */
+    @Step("Get date 3 days from next Friday")
+    public static String getNextFridayPlus3Days() {
+        return getNextFridayPlus3Days(DATE_FORMAT);
+    }
+
+    /**
+     * Get date that is 3 days from next Friday with custom format
+     * @param formatter Date formatter
+     * @return Date 3 days from next Friday in specified format
+     */
+    @Step("Get date 3 days from next Friday with format")
+    public static String getNextFridayPlus3Days(DateTimeFormatter formatter) {
+        try {
+            LocalDate today = LocalDate.now();
+            LocalDate nextFriday = today.with(DayOfWeek.FRIDAY);
+            
+            // If today is Friday or later in the week, get next Friday
+            if (today.getDayOfWeek().getValue() >= DayOfWeek.FRIDAY.getValue()) {
+                nextFriday = nextFriday.plusWeeks(1);
+            }
+            
+            LocalDate targetDate = nextFriday.plusDays(3);
+            String date = targetDate.format(formatter);
+            logger.debug("Next Friday + 3 days: {}", date);
+            return date;
+        } catch (Exception e) {
+            logger.error("Failed to get next Friday + 3 days: {}", e.getMessage());
+            throw new RuntimeException("Failed to get next Friday + 3 days", e);
+        }
+    }
+
+    /**
+     * Get date range from next Friday to 3 days later
+     * @return Array with [checkIn, checkOut] dates in yyyy-MM-dd format
+     */
+    @Step("Get check-in and check-out dates from next Friday")
+    public static String[] getAgodaDateRange() {
+        return getAgodaDateRange(DATE_FORMAT);
+    }
+
+    /**
+     * Get date range from next Friday to 3 days later with custom format
+     * @param formatter Date formatter
+     * @return Array with [checkIn, checkOut] dates in specified format
+     */
+    @Step("Get check-in and check-out dates from next Friday with format")
+    public static String[] getAgodaDateRange(DateTimeFormatter formatter) {
+        try {
+            String checkIn = getNextFriday(formatter);
+            String checkOut = getNextFridayPlus3Days(formatter);
+            logger.debug("Agoda date range: {} to {}", checkIn, checkOut);
+            return new String[]{checkIn, checkOut};
+        } catch (Exception e) {
+            logger.error("Failed to get Agoda date range: {}", e.getMessage());
+            throw new RuntimeException("Failed to get Agoda date range", e);
+        }
+    }
+
+    /**
+     * Get the next occurrence of a specific day of week
+     * @param targetDay The target day of week
+     * @return Date string in yyyy-MM-dd format
+     */
+    @Step("Get next occurrence of {targetDay}")
+    public static String getNextDayOfWeek(DayOfWeek targetDay) {
+        return getNextDayOfWeek(targetDay, DATE_FORMAT);
+    }
+
+    /**
+     * Get the next occurrence of a specific day of week with custom format
+     * @param targetDay The target day of week
+     * @param formatter Date formatter
+     * @return Date string in specified format
+     */
+    @Step("Get next occurrence of {targetDay} with format")
+    public static String getNextDayOfWeek(DayOfWeek targetDay, DateTimeFormatter formatter) {
+        try {
+            LocalDate today = LocalDate.now();
+            LocalDate nextTargetDay = today.with(TemporalAdjusters.next(targetDay));
+            String date = nextTargetDay.format(formatter);
+            logger.debug("Next {}: {}", targetDay, date);
+            return date;
+        } catch (Exception e) {
+            logger.error("Failed to get next {}: {}", targetDay, e.getMessage());
+            throw new RuntimeException("Failed to get next " + targetDay, e);
+        }
+    }
+
+    /**
+     * Get the next occurrence of a specific day of week plus additional days
+     * @param targetDay The target day of week
+     * @param plusDays Number of additional days to add
+     * @return Date string in yyyy-MM-dd format
+     */
+    @Step("Get next {targetDay} plus {plusDays} days")
+    public static String getNextDayOfWeekPlusDays(DayOfWeek targetDay, int plusDays) {
+        return getNextDayOfWeekPlusDays(targetDay, plusDays, DATE_FORMAT);
+    }
+
+    /**
+     * Get the next occurrence of a specific day of week plus additional days with custom format
+     * @param targetDay The target day of week
+     * @param plusDays Number of additional days to add
+     * @param formatter Date formatter
+     * @return Date string in specified format
+     */
+    @Step("Get next {targetDay} plus {plusDays} days with format")
+    public static String getNextDayOfWeekPlusDays(DayOfWeek targetDay, int plusDays, DateTimeFormatter formatter) {
+        try {
+            LocalDate today = LocalDate.now();
+            LocalDate nextTargetDay = today.with(TemporalAdjusters.next(targetDay));
+            LocalDate finalDate = nextTargetDay.plusDays(plusDays);
+            String date = finalDate.format(formatter);
+            logger.debug("Next {} + {} days: {}", targetDay, plusDays, date);
+            return date;
+        } catch (Exception e) {
+            logger.error("Failed to get next {} + {} days: {}", targetDay, plusDays, e.getMessage());
+            throw new RuntimeException("Failed to get next " + targetDay + " + " + plusDays + " days", e);
+        }
+    }
+
+    /**
+     * Get a flexible date range starting from next occurrence of target day
+     * @param targetDay The target day of week for check-in
+     * @param duration Number of days for the stay
+     * @return String array with [check-in, check-out] dates in yyyy-MM-dd format
+     */
+    @Step("Get flexible date range: next {targetDay} for {duration} days")
+    public static String[] getFlexibleDateRange(DayOfWeek targetDay, int duration) {
+        return getFlexibleDateRange(targetDay, duration, DATE_FORMAT);
+    }
+
+    /**
+     * Get a flexible date range starting from next occurrence of target day with custom format
+     * @param targetDay The target day of week for check-in
+     * @param duration Number of days for the stay
+     * @param formatter Date formatter
+     * @return String array with [check-in, check-out] dates in specified format
+     */
+    @Step("Get flexible date range: next {targetDay} for {duration} days with format")
+    public static String[] getFlexibleDateRange(DayOfWeek targetDay, int duration, DateTimeFormatter formatter) {
+        try {
+            String checkIn = getNextDayOfWeek(targetDay, formatter);
+            String checkOut = getNextDayOfWeekPlusDays(targetDay, duration, formatter);
+            logger.debug("Flexible date range: {} ({}) to {} ({} days duration)", 
+                        checkIn, targetDay, checkOut, duration);
+            return new String[]{checkIn, checkOut};
+        } catch (Exception e) {
+            logger.error("Failed to get flexible date range for {} + {} days: {}", targetDay, duration, e.getMessage());
+            throw new RuntimeException("Failed to get flexible date range for " + targetDay + " + " + duration + " days", e);
+        }
+    }
+
+    /**
+     * Get current day of week as enum
+     * @return DayOfWeek enum for current day
+     */
+    @Step("Get current day of week")
+    public static DayOfWeek getCurrentDayOfWeek() {
+        try {
+            DayOfWeek currentDay = LocalDate.now().getDayOfWeek();
+            logger.debug("Current day of week: {}", currentDay);
+            return currentDay;
+        } catch (Exception e) {
+            logger.error("Failed to get current day of week: {}", e.getMessage());
+            throw new RuntimeException("Failed to get current day of week", e);
+        }
+    }
+
+    /**
+     * Format a date range for logging purposes
+     * @param dateRange Array containing [check-in, check-out] dates
+     * @param targetDay The target day that was requested
+     * @param duration The duration in days
+     * @return Formatted string for logging
+     */
+    public static String formatDateRangeForLogging(String[] dateRange, DayOfWeek targetDay, int duration) {
+        return String.format("Date Range: %s (%s) to %s (%d days duration)", 
+                           dateRange[0], targetDay.toString(), 
+                           dateRange[1], duration);
     }
 
     /**
