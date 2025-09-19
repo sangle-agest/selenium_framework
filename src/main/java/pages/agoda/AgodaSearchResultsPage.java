@@ -8,7 +8,6 @@ import io.qameta.allure.Step;
 import org.openqa.selenium.By;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testng.Assert;
 
 import java.time.Duration;
 
@@ -93,19 +92,29 @@ public class AgodaSearchResultsPage {
     }
     
     /**
-     * Verify search results are displayed
+     * Check if search results are displayed
+     * @return true if search results are found, false otherwise
      */
-    @Step("Verify search results are displayed")
-    public void verifySearchResults() {
-        LogUtils.logTestStep("Verifying search results are displayed");
+    @Step("Check search results availability")
+    public boolean hasSearchResults() {
+        LogUtils.logTestStep("Checking search results availability");
         
         // First ensure page is fully loaded
         waitForPageToLoad();
         
         int resultCount = searchResults.size();
-        Assert.assertTrue(resultCount > 0, "No search results found! Expected > 0 but found: " + resultCount);
+        LogUtils.logTestStep("Found " + resultCount + " search results");
         
-        LogUtils.logTestStep("Search results verified: " + resultCount + " results found");
+        return resultCount > 0;
+    }
+    
+    /**
+     * Get the number of search results
+     * @return number of search results found
+     */
+    public int getSearchResultCount() {
+        waitForPageToLoad();
+        return searchResults.size();
     }
     
     /**
@@ -189,14 +198,18 @@ public class AgodaSearchResultsPage {
     }
     
     /**
-     * Verify price sorting (top 5 results should be in ascending order)
+     * Check if price sorting is correct (top 5 results should be in ascending order)
+     * @return PriceSortingResult object containing validation result and details
      */
-    @Step("Verify price sorting is correct")
-    public void verifyPriceSorting() {
-        LogUtils.logTestStep("Verifying price sorting for top 5 results");
+    @Step("Check price sorting order")
+    public PriceSortingResult checkPriceSorting() {
+        LogUtils.logTestStep("Checking price sorting for top 5 results");
         
         // Get top 5 price elements
         int maxResults = Math.min(5, originalPrices.size());
+        StringBuilder details = new StringBuilder();
+        boolean isCorrect = true;
+        String errorMessage = "";
         
         double previousPrice = 0;
         for (int i = 0; i < maxResults; i++) {
@@ -204,17 +217,66 @@ public class AgodaSearchResultsPage {
             String priceText = priceElement.getText();
             double currentPrice = extractPriceValue(priceText);
             
-            LogUtils.logTestStep("Result " + (i + 1) + " price: " + priceText + " (value: " + currentPrice + ")");
+            String priceInfo = "Result " + (i + 1) + " price: " + priceText + " (value: " + currentPrice + ")";
+            LogUtils.logTestStep(priceInfo);
+            details.append(priceInfo).append("; ");
             
-            if (i > 0) {
-                Assert.assertTrue(currentPrice >= previousPrice, 
-                    "Price sorting is incorrect! Price " + currentPrice + " should be >= " + previousPrice);
+            if (i > 0 && currentPrice < previousPrice) {
+                isCorrect = false;
+                errorMessage = "Price sorting is incorrect! Price " + currentPrice + " should be >= " + previousPrice;
+                break;
             }
             
             previousPrice = currentPrice;
         }
         
-        LogUtils.logTestStep("Price sorting verification passed for top 5 results");
+        if (isCorrect) {
+            LogUtils.logTestStep("Price sorting check passed for top 5 results");
+        } else {
+            LogUtils.logTestStep("Price sorting check failed: " + errorMessage);
+        }
+        
+        return new PriceSortingResult(isCorrect, errorMessage, details.toString(), maxResults);
+    }
+    
+    /**
+     * Inner class to hold price sorting validation results
+     */
+    public static class PriceSortingResult {
+        private final boolean isCorrect;
+        private final String errorMessage;
+        private final String details;
+        private final int checkedResults;
+        
+        public PriceSortingResult(boolean isCorrect, String errorMessage, String details, int checkedResults) {
+            this.isCorrect = isCorrect;
+            this.errorMessage = errorMessage;
+            this.details = details;
+            this.checkedResults = checkedResults;
+        }
+        
+        public boolean isCorrect() {
+            return isCorrect;
+        }
+        
+        public String getErrorMessage() {
+            return errorMessage;
+        }
+        
+        public String getDetails() {
+            return details;
+        }
+        
+        public int getCheckedResults() {
+            return checkedResults;
+        }
+        
+        @Override
+        public String toString() {
+            return String.format("PriceSortingResult{isCorrect=%s, checkedResults=%d, details='%s'%s}", 
+                    isCorrect, checkedResults, details, 
+                    !isCorrect ? ", error='" + errorMessage + "'" : "");
+        }
     }
     
     /**

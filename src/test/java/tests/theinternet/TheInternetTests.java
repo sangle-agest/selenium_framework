@@ -1,4 +1,4 @@
-package tests;
+package tests.theinternet;
 
 import io.qameta.allure.Description;
 import io.qameta.allure.Epic;
@@ -9,6 +9,7 @@ import org.testng.annotations.Test;
 import pages.theinternet.CheckboxesPage;
 import pages.theinternet.DragAndDropPage;
 import pages.theinternet.DropdownPage;
+import tests.BaseTest;
 
 import static com.codeborne.selenide.Selenide.open;
 

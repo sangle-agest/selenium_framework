@@ -61,7 +61,6 @@ public class TC01_SearchAndSortHotelTest extends AgodaBaseTest {
             "Agoda homepage should be displayed");
         LogUtils.logTestStep("✓ Agoda homepage loaded successfully");
         
-        // Option A: Use the 3 separate methods for detailed debugging
         // Step 2: Search for destination
         homePage.searchDestination(destination);
         
@@ -71,24 +70,51 @@ public class TC01_SearchAndSortHotelTest extends AgodaBaseTest {
         // Step 4: Set occupancy and perform search
         AgodaSearchResultsPage resultsPage = homePage.setOccupancyAndSearch(rooms, adults, children);
         
-        // Option B: Use the simplified single method (commented out - you can choose)
-        // AgodaSearchResultsPageUpdated resultsPage = homePage.searchHotels(
-        //     destination, checkInDate, checkOutDate, rooms, adults, children);
-        
         LogUtils.logTestStep("✓ Hotel search completed successfully");
         
         // Step 6: Verify search results
-        resultsPage.verifySearchResults();
-        LogUtils.logTestStep("✓ Search results verified");
+        verifySearchResults(resultsPage);
         
         // Step 7: Sort by lowest price first
         resultsPage.sortBy(sortOption);
         LogUtils.logTestStep("✓ Applied sort: " + sortOption);
         
         // Step 8: Verify price sorting
-        resultsPage.verifyPriceSorting();
-        LogUtils.logTestStep("✓ Price sorting verification completed");
+        verifyPriceSorting(resultsPage);
         
         LogUtils.logTestStep("TC01: Search and Sort Hotel test completed successfully");
+    }
+    
+    /**
+     * Verify search results are available with detailed Allure reporting
+     * @param resultsPage the search results page object
+     */
+    @Step("Verify search results are displayed")
+    private void verifySearchResults(AgodaSearchResultsPage resultsPage) {
+        boolean hasResults = resultsPage.hasSearchResults();
+        int resultCount = resultsPage.getSearchResultCount();
+        
+        Assert.assertTrue(hasResults, 
+            "No search results found! Expected search results > 0 but found: " + resultCount + 
+            ". Please check if destination, dates, or search criteria are valid.");
+        
+        LogUtils.logTestStep("✓ Search results verified: " + resultCount + " results found");
+    }
+    
+    /**
+     * Verify price sorting is correct with detailed Allure reporting
+     * @param resultsPage the search results page object
+     */
+    @Step("Verify price sorting is correct (lowest price first)")
+    private void verifyPriceSorting(AgodaSearchResultsPage resultsPage) {
+        AgodaSearchResultsPage.PriceSortingResult sortingResult = resultsPage.checkPriceSorting();
+        
+        Assert.assertTrue(sortingResult.isCorrect(), 
+            "Price sorting verification failed! " + sortingResult.getErrorMessage() + 
+            ". Checked " + sortingResult.getCheckedResults() + " results. Details: " + 
+            sortingResult.getDetails());
+        
+        LogUtils.logTestStep("✓ Price sorting verification completed successfully for " + 
+                           sortingResult.getCheckedResults() + " results");
     }
 }

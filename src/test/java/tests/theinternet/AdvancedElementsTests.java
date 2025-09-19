@@ -1,4 +1,4 @@
-package tests;
+package tests.theinternet;
 
 import core.elements.Button;
 import core.elements.Slider;
@@ -11,6 +11,7 @@ import io.qameta.allure.Story;
 import org.openqa.selenium.Keys;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+import tests.BaseTest;
 
 import java.util.List;
 

@@ -54,4 +54,4 @@ node_modules/
 *.ear
 *.zip
 *.tar.gz
-*.rar
+*.rar.allure/
