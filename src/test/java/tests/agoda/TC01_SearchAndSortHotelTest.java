@@ -1,6 +1,5 @@
 package tests.agoda;
 
-import core.reporting.ScreenshotHandler;
 import core.utils.LogUtils;
 import io.qameta.allure.*;
 import org.testng.Assert;
@@ -9,74 +8,85 @@ import pages.agoda.AgodaHomePage;
 import pages.agoda.AgodaSearchResultsPage;
 
 /**
- * TC 01: Search and Sort Hotel Successfully
+ * TC 01: Updated Search and Sort Hotel Test with correct XPaths
  * 
  * Test Steps:
- * 1. Navigate to agoda.com
- * 2. Input destination: Phuket
- * 3. Input dates: Next Friday + 3 days
- * 4. Input travelers: Family Travelers → 2 rooms, 4 adults
- * 5. Click Search
- * 6. Sort by: Price (low to high)
- * 7. Verify: Hotels are displayed and sorted
+ * 1. Navigate to agoda.com (handled by AgodaBaseTest)
+ * 2. Input destination: Da Nang (using autocomplete)
+ * 3. Input dates: Dynamic date selection  
+ * 4. Input travelers: 2 rooms, 3 adults, 0 children
+ * 5. Click Search (handles tab switching)
+ * 6. Verify search results > 0
+ * 7. Sort by: Lowest price first
+ * 8. Verify: Top 5 results are sorted by price ascending
  */
 @Epic("Agoda Hotel Booking")
-@Feature("Hotel Search and Sort")
-@Story("TC01 - Search and Sort Hotel Successfully")
+@Feature("Hotel Search and Sort") 
+@Story("TC01 - Updated Search and Sort Hotel Successfully")
 public class TC01_SearchAndSortHotelTest extends AgodaBaseTest {
 
-    @Test(description = "Search for hotels in Phuket and sort by price (low to high)")
+    @Test(description = "Search for hotels in Da Nang and sort by price (lowest first)")
     @Severity(SeverityLevel.CRITICAL)
-    @Description("Verify that user can search for hotels in Phuket with specific dates and travelers, then sort results by price")
+    @Description("Verify that user can search for hotels in Da Nang with specific dates and travelers, then sort results by lowest price first")
     public void testSearchAndSortHotel() {
         // Test Data
-        String destination = "Phuket";
-        String sortOption = "Price (low to high)";
+        String destination = "Da Nang";
+        String sortOption = "Lowest price first";
         
-        LogUtils.logTestStep("Starting TC01: Search and Sort Hotel Successfully");
+        // Dates - using simple date format (changed to October for better availability)
+        String checkInDate = "2025-10-01";
+        String checkOutDate = "2025-10-05";
+        
+        // Occupancy
+        int rooms = 2;
+        int adults = 3;
+        int children = 0;
+        
+        LogUtils.logTestStep("Starting TC01: Updated Search and Sort Hotel Successfully");
         LogUtils.logTestData("Destination", destination);
+        LogUtils.logTestData("Check-in Date", checkInDate);
+        LogUtils.logTestData("Check-out Date", checkOutDate);
+        LogUtils.logTestData("Rooms", String.valueOf(rooms));
+        LogUtils.logTestData("Adults", String.valueOf(adults));
+        LogUtils.logTestData("Children", String.valueOf(children));
         LogUtils.logTestData("Sort Option", sortOption);
         
-        // Step 1: Navigate to Agoda homepage
+        // Step 1: Initialize homepage (already navigated by AgodaBaseTest)
         AgodaHomePage homePage = new AgodaHomePage();
-        homePage.navigateToHomepage();
         
-        // Verify homepage is loaded
+        // Verify homepage is loaded 
         Assert.assertTrue(homePage.isHomepageDisplayed(), 
             "Agoda homepage should be displayed");
         LogUtils.logTestStep("✓ Agoda homepage loaded successfully");
         
-        // Step 2-5: Perform hotel search
-        AgodaSearchResultsPage resultsPage = homePage.searchHotels(destination);
+        // Option A: Use the 3 separate methods for detailed debugging
+        // Step 2: Search for destination
+        homePage.searchDestination(destination);
         
-        // Verify search results are displayed
-        Assert.assertTrue(resultsPage.areResultsDisplayed(), 
-            "Search results should be displayed");
-        LogUtils.logTestStep("✓ Hotel search results displayed successfully");
+        // Step 3: Select travel dates
+        homePage.selectTravelDates(checkInDate, checkOutDate);
         
-        // Log number of hotels found
-        int hotelCount = resultsPage.getHotelCount();
-        LogUtils.logTestData("Number of hotels found", hotelCount);
-        Assert.assertTrue(hotelCount > 0, 
-            "At least one hotel should be found in search results");
+        // Step 4: Set occupancy and perform search
+        AgodaSearchResultsPage resultsPage = homePage.setOccupancyAndSearch(rooms, adults, children);
         
-        // Step 6: Sort by Price (low to high)
+        // Option B: Use the simplified single method (commented out - you can choose)
+        // AgodaSearchResultsPageUpdated resultsPage = homePage.searchHotels(
+        //     destination, checkInDate, checkOutDate, rooms, adults, children);
+        
+        LogUtils.logTestStep("✓ Hotel search completed successfully");
+        
+        // Step 6: Verify search results
+        resultsPage.verifySearchResults();
+        LogUtils.logTestStep("✓ Search results verified");
+        
+        // Step 7: Sort by lowest price first
         resultsPage.sortBy(sortOption);
+        LogUtils.logTestStep("✓ Applied sort: " + sortOption);
         
-        // Step 7: Verify sorting was applied
-        Assert.assertTrue(resultsPage.verifySortingApplied(), 
-            "Sorting should be applied successfully");
-        LogUtils.logTestStep("✓ Hotels sorted by price (low to high) successfully");
+        // Step 8: Verify price sorting
+        resultsPage.verifyPriceSorting();
+        LogUtils.logTestStep("✓ Price sorting verification completed");
         
-        // Get first hotel details after sorting
-        String firstHotelDetails = resultsPage.getFirstHotelDetails();
-        LogUtils.logTestData("First hotel after sorting", firstHotelDetails);
-        
-        // Final verification
-        Assert.assertTrue(resultsPage.areResultsDisplayed(), 
-            "Search results should still be displayed after sorting");
-        
-        LogUtils.logTestStep("✓ TC01: Search and Sort Hotel Successfully - PASSED");
-        ScreenshotHandler.takeStepScreenshot("Search and Sort Results");
+        LogUtils.logTestStep("TC01: Search and Sort Hotel test completed successfully");
     }
 }

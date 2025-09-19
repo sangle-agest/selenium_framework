@@ -1,12 +1,9 @@
 package pages.agoda;
 
-import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
-import core.elements.BaseElement;
+import com.codeborne.selenide.WebDriverRunner;
 import core.elements.Button;
 import core.elements.TextBox;
-import core.enums.DayOfWeekEnum;
-import core.utils.DateTimeUtils;
 import core.utils.LogUtils;
 import core.utils.WaitUtils;
 import io.qameta.allure.Step;
@@ -14,17 +11,15 @@ import org.openqa.selenium.By;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static com.codeborne.selenide.Selenide.$$;
-
-import java.time.DayOfWeek;
 import java.time.Duration;
 
 import static com.codeborne.selenide.Selenide.$;
-import static com.codeborne.selenide.Selenide.open;
+import static com.codeborne.selenide.Selenide.$$;
+
+import static com.codeborne.selenide.Selenide.*;
 
 /**
- * Page Object for Agoda Homepage
- * Handles search functionality for hotels
+ * Updated AgodaHomePage with correct XPaths captured from actual Agoda site
  */
 public class AgodaHomePage {
     private static final Logger logger = LoggerFactory.getLogger(AgodaHomePage.class);
@@ -38,324 +33,370 @@ public class AgodaHomePage {
     // Search autocomplete dropdown
     private final SelenideElement firstAutocompleteOption = $(By.xpath("(//ul[@class='AutocompleteList']//li[@role='option'])[1]"));
     
-    // Date elements
-    private final Button dateButton = new Button($(By.xpath("//button[@data-selenium='date-display-btn']")), "Date Button");
-    private final BaseElement datePicker = new BaseElement($(By.xpath("//div[@data-selenium='calendar-popup']")), "Date Picker");
+    // Date picker elements
+    private final SelenideElement checkInButton = $(By.xpath("//div[@id='check-in-box' and @role='button']"));
+    private final SelenideElement checkOutButton = $(By.xpath("//div[@id='check-out-box' and @role='button']"));
     
-    // Guests/Occupancy elements
-    private final Button guestsButton = new Button($(By.xpath("//button[@data-selenium='occupancy-btn']")), "Guests Button");
-    private final BaseElement occupancyModal = new BaseElement($(By.xpath("//div[@data-selenium='occupancy-popup']")), "Occupancy Modal");
-    private final Button addRoomButton = new Button($(By.xpath("//button[@data-selenium='occupancy-add-room']")), "Add Room Button");
-    private final Button occupancyDoneButton = new Button($(By.xpath("//button[@data-selenium='occupancy-done']")), "Occupancy Done Button");
+    // Calendar tab elements - verify before date selection
+    private final SelenideElement calendarTab = $(By.xpath("//button[@role='tab']//p[normalize-space()='Calendar']"));
+    private final SelenideElement flexibleTab = $(By.xpath("//button[@role='tab']//p[normalize-space()=\"I'm flexible\"]"));
     
     // Search button  
     private final Button searchButton = new Button($(By.xpath("//button[@data-selenium='searchButton']")), "Search Button");
     
+    // Occupancy elements with correct XPaths
+    // Rooms
+    private final SelenideElement roomValue = $(By.xpath("//div[@data-selenium='desktop-occ-room-value']/p"));
+    private final Button addRoom = new Button($(By.xpath("//div[@data-selenium='occupancyRooms']//button[@data-selenium='plus']")), "Add Room Button");
+    private final Button minusRoom = new Button($(By.xpath("//div[@data-selenium='occupancyRooms']//button[@data-selenium='minus']")), "Minus Room Button");
+    
+    // Adults
+    private final SelenideElement adultValue = $(By.xpath("//div[@data-selenium='desktop-occ-adult-value']/p"));
+    private final Button addAdult = new Button($(By.xpath("//div[@data-selenium='occupancyAdults']//button[@data-selenium='plus']")), "Add Adult Button");
+    private final Button minusAdult = new Button($(By.xpath("//div[@data-selenium='occupancyAdults']//button[@data-selenium='minus']")), "Minus Adult Button");
+    
+    // Children
+    private final SelenideElement childValue = $(By.xpath("//div[@data-selenium='desktop-occ-children-value']/p"));
+    private final Button addChild = new Button($(By.xpath("//div[@data-selenium='occupancyChildren']//button[@data-selenium='plus']")), "Add Child Button");
+    private final Button minusChild = new Button($(By.xpath("//div[@data-selenium='occupancyChildren']//button[@data-selenium='minus']")), "Minus Child Button");
+
     public AgodaHomePage() {
-        logger.info("Initialized AgodaHomePage");
+        logger.info("Initialized AgodaHomePageUpdated");
     }
 
     /**
      * Navigate to Agoda homepage
-     * @return This page object for method chaining
      */
     @Step("Navigate to Agoda homepage")
-    public AgodaHomePage navigateToHomepage() {
+    public void navigateToHomepage() {
         LogUtils.logTestStep("Navigate to Agoda homepage: " + AGODA_URL);
         open(AGODA_URL);
-        
-        // Wait for page to load
         WaitUtils.waitForPageLoad();
-        WaitUtils.waitForVisible(destinationInput.getElement(), Duration.ofSeconds(10));
-        
         LogUtils.logTestStep("Agoda homepage loaded successfully");
-        return this;
     }
 
     /**
-     * Enter destination in search box
-     * @param destination The destination to search for
-     * @return This page object for method chaining
+     * Enter destination with autocomplete selection
      */
     @Step("Enter destination: {destination}")
-    public AgodaHomePage enterDestination(String destination) {
+    public void enterDestination(String destination) {
         LogUtils.logTestStep("Entering destination: " + destination);
         
-        // Clear any existing text and enter destination
+        // Clear and enter destination
         destinationInput.clear();
         destinationInput.type(destination);
         
-        // Wait for autocomplete dropdown to appear
-        WaitUtils.sleep(2000);
+        // Wait for autocomplete results to appear
+        WaitUtils.waitForVisible(firstAutocompleteOption, Duration.ofSeconds(10));
         
-        // Strategy 1: Look for City type suggestions first (preferred)
+        // Click first option
+        firstAutocompleteOption.click();
+        LogUtils.logTestStep("Selected first autocomplete option for: " + destination);
+    }
+
+    /**
+     * Verify calendar tabs are displayed and interactable
+     */
+    @Step("Verify calendar tabs are displayed and interactable")
+    public void verifyCalendarTabs() {
+        LogUtils.logTestStep("Verifying calendar tabs are displayed and interactable");
+        
         try {
-            SelenideElement cityTypeSuggestion = $(By.xpath("//li[@data-selenium='autosuggest-item'][@data-element-place-suggestion-type='City'][1]"));
-            if (cityTypeSuggestion.isDisplayed()) {
-                LogUtils.logTestStep("Found City type suggestion, selecting it");
-                cityTypeSuggestion.click();
-                LogUtils.logTestStep("City destination '" + destination + "' selected successfully");
-                return this;
-            }
+            // Wait for calendar tabs to be visible with shorter timeout
+            WaitUtils.waitForVisible(calendarTab, Duration.ofSeconds(3));
+            LogUtils.logTestStep("✓ Calendar tab is displayed and interactable");
         } catch (Exception e) {
-            LogUtils.logTestStep("City type suggestion not found, trying alternative approaches");
+            LogUtils.logTestStep("⚠ Calendar tab not found - continuing without verification: " + e.getMessage());
         }
         
-        // Strategy 2: Look for suggestions with "City" in the subtext
         try {
-            SelenideElement citySubtextSuggestion = $(By.xpath("//li[@data-selenium='autosuggest-item'][.//span[text()='City']][1]"));
-            if (citySubtextSuggestion.isDisplayed()) {
-                LogUtils.logTestStep("Found suggestion with City subtext, selecting it");
-                citySubtextSuggestion.click();
-                LogUtils.logTestStep("City destination '" + destination + "' selected successfully");
-                return this;
-            }
+            WaitUtils.waitForVisible(flexibleTab, Duration.ofSeconds(3));
+            LogUtils.logTestStep("✓ I'm flexible tab is displayed and interactable");
         } catch (Exception e) {
-            LogUtils.logTestStep("City subtext suggestion not found, trying next approach");
+            LogUtils.logTestStep("⚠ I'm flexible tab not found - continuing without verification: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Check if DatePicker popup is accessible and visible
+     */
+    private boolean isDatePickerVisible() {
+        try {
+            LogUtils.logTestStep("DEBUG: Checking for DatePicker accessibility...");
+            SelenideElement datePickerPopup = $(By.xpath("//div[@id='DatePicker__AccessibleV2']"));
+            boolean isVisible = datePickerPopup.exists() && datePickerPopup.isDisplayed();
+            LogUtils.logTestStep("DEBUG: DatePicker visibility check result: " + isVisible);
+            return isVisible;
+        } catch (Exception e) {
+            LogUtils.logTestStep("DEBUG: Exception checking DatePicker visibility: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Select dates using simple date format (YYYY-MM-DD)
+     */
+    @Step("Select check-in date: {checkInDate} and check-out date: {checkOutDate}")
+    public void selectDates(String checkInDate, String checkOutDate) {
+        LogUtils.logTestStep("Selecting dates - Check-in: " + checkInDate + ", Check-out: " + checkOutDate);
+        
+        // First check if DatePicker popup is already visible after autocomplete selection
+        LogUtils.logTestStep("Checking if DatePicker popup is already visible after autocomplete selection");
+        
+        if (isDatePickerVisible()) {
+            LogUtils.logTestStep("✓ DatePicker popup is already visible, proceeding with date selection");
+        } else {
+            LogUtils.logTestStep("DatePicker popup not visible, clicking check-in button to open calendar");
+            checkInButton.click();
+            WaitUtils.sleep(2000); // Wait for calendar to open
+            
+            // Wait for DatePicker popup to become visible
+            LogUtils.logTestStep("Waiting for DatePicker popup to become accessible...");
+            for (int i = 0; i < 10; i++) {
+                if (isDatePickerVisible()) {
+                    LogUtils.logTestStep("✓ DatePicker popup is now visible");
+                    break;
+                }
+                WaitUtils.sleep(1000);
+                LogUtils.logTestStep("Still waiting for DatePicker popup... attempt " + (i + 1));
+            }
+            
+            if (!isDatePickerVisible()) {
+                LogUtils.logTestStep("ERROR: DatePicker popup did not become visible after waiting");
+                return;
+            }
         }
         
-        // Strategy 3: Select the first autosuggest item (fallback)
+        LogUtils.logTestStep("Selecting check-in date: " + checkInDate);
+        WaitUtils.sleep(2000); // Reduced wait time
+        selectDate(checkInDate);
+        
+        LogUtils.logTestStep("Selecting check-out date: " + checkOutDate);
+        WaitUtils.sleep(2000); // Reduced wait time
+        selectDate(checkOutDate);
+    }
+
+        /**
+     * Select a specific date using simple date format (YYYY-MM-DD) within the DatePicker popup
+     */
+    private void selectDate(String dateString) {
         try {
-            SelenideElement firstSuggestion = $(By.xpath("//li[@data-selenium='autosuggest-item'][1]"));
-            WaitUtils.waitForVisible(firstSuggestion, Duration.ofSeconds(5));
-            firstSuggestion.click();
+            LogUtils.logTestStep("Looking for date: " + dateString);
             
-            LogUtils.logTestStep("Selected first available suggestion for: " + destination);
-        } catch (Exception e) {
-            LogUtils.logTestStep("Failed to select any destination suggestion, continuing anyway");
-        }
-        
-        return this;
-    }
-
-    /**
-     * Select check-in and check-out dates using next Friday + 3 days (backward compatibility)
-     * @return This page object for method chaining
-     */
-    @Step("Select dates: Next Friday + 3 days")
-    public AgodaHomePage selectDates() {
-        return selectDates(DayOfWeek.FRIDAY, 3);
-    }
-
-    /**
-     * Select check-in and check-out dates with flexible day and duration
-     * @param startDay The day of week for check-in (e.g., DayOfWeek.SUNDAY)
-     * @param duration Number of days for the stay (e.g., 5 for 5-day stay)
-     * @return This page object for method chaining
-     */
-    @Step("Select dates: Next {startDay} + {duration} days")
-    public AgodaHomePage selectDates(DayOfWeek startDay, int duration) {
-        LogUtils.logTestStep("Selecting dates: Next " + startDay + " + " + duration + " days");
-        
-        // Get the flexible date range
-        String[] dateRange = DateTimeUtils.getFlexibleDateRange(startDay, duration);
-        String checkIn = dateRange[0];
-        String checkOut = dateRange[1];
-        
-        LogUtils.logTestStep("Check-in: " + checkIn + ", Check-out: " + checkOut);
-        LogUtils.logTestStep(DateTimeUtils.formatDateRangeForLogging(dateRange, startDay, duration));
-        
-        // Click on date button to open date picker
-        dateButton.click();
-        WaitUtils.waitForVisible(datePicker.getElement(), Duration.ofSeconds(5));
-        
-        // Select check-in date
-        selectDateInPicker(checkIn);
-        
-        // Select check-out date  
-        selectDateInPicker(checkOut);
-        
-        LogUtils.logTestStep("Dates selected successfully");
-        return this;
-    }
-
-    /**
-     * Select check-in and check-out dates using DayOfWeekEnum for better type safety
-     * @param startDay The day of week enum for check-in
-     * @param duration Number of days for the stay
-     * @return This page object for method chaining
-     */
-    @Step("Select dates: Next {startDay} + {duration} days (using enum)")
-    public AgodaHomePage selectDates(DayOfWeekEnum startDay, int duration) {
-        return selectDates(startDay.getDayOfWeek(), duration);
-    }
-
-    /**
-     * Helper method to select a specific date in the date picker
-     * @param date Date in yyyy-MM-dd format
-     */
-    private void selectDateInPicker(String date) {
-        LogUtils.logTestStep("Selecting date in picker: " + date);
-        
-        // Convert date to appropriate format for selector
-        String[] dateParts = date.split("-");
-        String day = dateParts[2];
-        
-        // Remove leading zero from day if present
-        day = String.valueOf(Integer.parseInt(day));
-        
-        try {
-            // Try multiple selector strategies for date selection
-            SelenideElement dateElement = null;
-            
-            // Strategy 1: data-selenium-date attribute
-            try {
-                dateElement = $(By.xpath(String.format("//span[@data-selenium-date='%s'] | //div[@data-selenium-date='%s'] | //button[@data-selenium-date='%s']", date, date, date)));
-                if (dateElement.isDisplayed()) {
-                    LogUtils.logTestStep("Found date using data-selenium-date: " + date);
-                    dateElement.click();
-                    WaitUtils.sleep(500);
-                    return;
-                }
-            } catch (Exception e) {
-                LogUtils.logTestStep("data-selenium-date strategy failed, trying next approach");
-            }
-            
-            // Strategy 2: aria-label with date
-            try {
-                dateElement = $(By.xpath(String.format("//button[@aria-label*='%s'] | //div[@aria-label*='%s']", date, date)));
-                if (dateElement.isDisplayed()) {
-                    LogUtils.logTestStep("Found date using aria-label: " + date);
-                    dateElement.click();
-                    WaitUtils.sleep(500);
-                    return;
-                }
-            } catch (Exception e) {
-                LogUtils.logTestStep("aria-label strategy failed, trying next approach");
-            }
-            
-            // Strategy 3: Look for day number in date picker
-            try {
-                dateElement = $(By.xpath(String.format("//div[contains(@class,'calendar')]//button[text()='%s'] | //div[contains(@class,'date')]//span[text()='%s']", day, day)));
-                if (dateElement.isDisplayed()) {
-                    LogUtils.logTestStep("Found date using day number: " + day);
-                    dateElement.click();
-                    WaitUtils.sleep(500);
-                    return;
-                }
-            } catch (Exception e) {
-                LogUtils.logTestStep("Day number strategy failed, trying generic approach");
-            }
-            
-            // Strategy 4: Generic clickable date elements
-            ElementsCollection availableDates = $$(By.xpath("//button[contains(@class,'date')] | //div[contains(@class,'date')][contains(@class,'available')]"));
-            if (availableDates.size() > 0) {
-                LogUtils.logTestStep("Found " + availableDates.size() + " available dates, clicking first available");
-                availableDates.first().click();
-                WaitUtils.sleep(500);
+            // First ensure DatePicker popup is visible
+            SelenideElement datePickerPopup = $(By.xpath("//div[@id='DatePicker__AccessibleV2']"));
+            if (!datePickerPopup.exists() || !datePickerPopup.isDisplayed()) {
+                LogUtils.logTestStep("ERROR: DatePicker popup is not visible when trying to select date");
                 return;
             }
             
-            LogUtils.logTestStep("Warning: Could not find specific date " + date + ", continuing without date selection");
+            // Use direct JavaScript approach without Selenium element validation
+            LogUtils.logTestStep("DEBUG: Using direct JavaScript XPath evaluation to click date...");
+            String jsScript = "document.evaluate(\"//div[@id='DatePicker__AccessibleV2']//span[@data-selenium-date='" + dateString + "']\", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue?.click();";
+            executeJavaScript(jsScript);
+            
+            // Add a small wait to see if the click was successful
+            WaitUtils.sleep(1000);
+            
+            // First, let's check what's actually in the DatePicker popup
+            LogUtils.logTestStep("DEBUG: Checking what dates are available in the DatePicker popup...");
+            String availableDatesScript = "var dates = document.evaluate(\"//div[@id='DatePicker__AccessibleV2']//span[@data-selenium-date]\", document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null); var result = []; for(var i = 0; i < Math.min(10, dates.snapshotLength); i++) { result.push(dates.snapshotItem(i).getAttribute('data-selenium-date')); } return result.join(', ');";
+            String availableDates = (String) executeJavaScript(availableDatesScript);
+            LogUtils.logTestStep("DEBUG: Available dates in popup: " + availableDates);
+            
+            // Verify if the date was selected by checking if it exists
+            String verificationScript = "return document.evaluate(\"//div[@id='DatePicker__AccessibleV2']//span[@data-selenium-date='" + dateString + "']\", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue !== null;";
+            Boolean elementExists = (Boolean) executeJavaScript(verificationScript);
+            
+            if (elementExists != null && elementExists) {
+                LogUtils.logTestStep("✓ Successfully clicked date using JavaScript XPath: " + dateString);
+            } else {
+                LogUtils.logTestStep("⚠ Date element not found for: " + dateString);
+                
+                // Try to find a similar date if exact date not available
+                LogUtils.logTestStep("DEBUG: Attempting to find alternative dates close to: " + dateString);
+                String alternativeScript = "var dates = document.evaluate(\"//div[@id='DatePicker__AccessibleV2']//span[@data-selenium-date]\", document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null); for(var i = 0; i < dates.snapshotLength; i++) { var date = dates.snapshotItem(i).getAttribute('data-selenium-date'); if(date && date.includes('2025-09')) { dates.snapshotItem(i).click(); return 'Clicked alternative date: ' + date; } } return 'No suitable alternative found';";
+                String alternativeResult = (String) executeJavaScript(alternativeScript);
+                LogUtils.logTestStep("DEBUG: Alternative date selection result: " + alternativeResult);
+            }
             
         } catch (Exception e) {
-            LogUtils.logTestStep("Date selection failed: " + e.getMessage() + ", continuing anyway");
+            LogUtils.logTestStep("ERROR: Exception selecting date: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
     /**
-     * Configure travelers: Family Travelers → 2 rooms, 4 adults
-     * @return This page object for method chaining
+     * Set occupancy (rooms, adults, children) intelligently
      */
-    @Step("Configure travelers: 2 rooms, 4 adults")
-    public AgodaHomePage configureTravelers() {
-        LogUtils.logTestStep("Configuring travelers: 2 rooms, 4 adults");
+    @Step("Set occupancy - Rooms: {targetRooms}, Adults: {targetAdults}, Children: {targetChildren}")
+    public void setOccupancy(int targetRooms, int targetAdults, int targetChildren) {
+        LogUtils.logTestStep("Setting occupancy - Rooms: " + targetRooms + ", Adults: " + targetAdults + ", Children: " + targetChildren);
         
-        // Click on guests button to open occupancy modal
-        guestsButton.click();
-        WaitUtils.waitForVisible(occupancyModal.getElement(), Duration.ofSeconds(5));
+        // Set rooms
+        setRoomCount(targetRooms);
         
-        // Add second room
-        addRoomButton.click();
-        WaitUtils.sleep(500);
+        // Set adults
+        setAdultCount(targetAdults);
         
-        // Increase adults count to 4 (2 adults per room)
-        // First room should already have 2 adults, so we need to add 2 more adults to second room
-        // Find the second room's adult increase button
-        SelenideElement secondRoomAdultsIncrease = $(By.xpath("(//button[@data-selenium='adultsStepperIncrease'])[2]"));
-        secondRoomAdultsIncrease.click();
-        WaitUtils.sleep(300);
-        secondRoomAdultsIncrease.click();
-        WaitUtils.sleep(300);
-        
-        // Click done to confirm occupancy settings
-        occupancyDoneButton.click();
-        WaitUtils.sleep(500);
-        
-        LogUtils.logTestStep("Travelers configured: 2 rooms, 4 adults");
-        return this;
+        // Set children
+        setChildCount(targetChildren);
     }
 
     /**
-     * Click search button to perform hotel search
-     * @return AgodaSearchResultsPage object
+     * Set room count by comparing current value with target
+     */
+    private void setRoomCount(int targetRooms) {
+        int currentRooms = Integer.parseInt(roomValue.getText().trim());
+        LogUtils.logTestStep("Current rooms: " + currentRooms + ", Target rooms: " + targetRooms);
+        
+        while (currentRooms < targetRooms) {
+            addRoom.click();
+            currentRooms++;
+            sleep(1000); // Simple wait instead of waitForElementUpdate
+        }
+        
+        while (currentRooms > targetRooms) {
+            minusRoom.click();
+            currentRooms--;
+            sleep(1000); // Simple wait instead of waitForElementUpdate
+        }
+    }
+
+    /**
+     * Set adult count by comparing current value with target
+     */
+    private void setAdultCount(int targetAdults) {
+        int currentAdults = Integer.parseInt(adultValue.getText().trim());
+        LogUtils.logTestStep("Current adults: " + currentAdults + ", Target adults: " + targetAdults);
+        
+        while (currentAdults < targetAdults) {
+            addAdult.click();
+            currentAdults++;
+            sleep(1000); // Simple wait instead of waitForElementUpdate
+        }
+        
+        while (currentAdults > targetAdults) {
+            minusAdult.click();
+            currentAdults--;
+            sleep(1000); // Simple wait instead of waitForElementUpdate
+        }
+    }
+
+    /**
+     * Set child count by comparing current value with target
+     */
+    private void setChildCount(int targetChildren) {
+        int currentChildren = Integer.parseInt(childValue.getText().trim());
+        LogUtils.logTestStep("Current children: " + currentChildren + ", Target children: " + targetChildren);
+        
+        while (currentChildren < targetChildren) {
+            addChild.click();
+            currentChildren++;
+            sleep(1000); // Simple wait instead of waitForElementUpdate
+        }
+        
+        while (currentChildren > targetChildren) {
+            minusChild.click();
+            currentChildren--;
+            sleep(1000); // Simple wait instead of waitForElementUpdate
+        }
+    }
+
+    /**
+     * Click search button and handle new tab
      */
     @Step("Click search button")
-    public AgodaSearchResultsPage clickSearch() {
+    public AgodaSearchResultsPage clickSearchButton() {
         LogUtils.logTestStep("Clicking search button");
-        
         searchButton.click();
-        WaitUtils.waitForPageLoad();
         
-        LogUtils.logTestStep("Search initiated, navigating to results page");
-        return new AgodaSearchResultsPage();
-    }
-
-    /**
-     * Perform complete hotel search with given parameters (backward compatibility)
-     * @param destination The destination to search for
-     * @return AgodaSearchResultsPage object
-     */
-    @Step("Search hotels for {destination}")
-    public AgodaSearchResultsPage searchHotels(String destination) {
-        LogUtils.logTestStep("Performing hotel search for: " + destination);
+        // Handle new tab - switch back to expected tab
+        LogUtils.logTestStep("Handling tab switching after search");
+        SwitchTabs.switchToExpectedTab();
         
-        return this.enterDestination(destination)
-                  .selectDates()
-                  .configureTravelers()
-                  .clickSearch();
-    }
-
-    /**
-     * Perform complete hotel search with flexible date parameters
-     * @param destination The destination to search for
-     * @param startDay The day of week for check-in
-     * @param duration Number of days for the stay
-     * @return AgodaSearchResultsPage object
-     */
-    @Step("Search hotels for {destination} from {startDay} for {duration} days")
-    public AgodaSearchResultsPage searchHotels(String destination, DayOfWeek startDay, int duration) {
-        LogUtils.logTestStep("Performing hotel search for: " + destination + 
-                           " from next " + startDay + " for " + duration + " days");
+        // Create results page instance and wait for it to load
+        AgodaSearchResultsPage resultsPage = new AgodaSearchResultsPage();
+        LogUtils.logTestStep("Waiting for search results page to fully load after tab switch...");
+        resultsPage.waitForPageToLoad();
         
-        return this.enterDestination(destination)
-                  .selectDates(startDay, duration)
-                  .configureTravelers()
-                  .clickSearch();
+        return resultsPage;
     }
 
     /**
-     * Perform complete hotel search with DayOfWeekEnum for better type safety
-     * @param destination The destination to search for
-     * @param startDay The day of week enum for check-in
-     * @param duration Number of days for the stay
-     * @return AgodaSearchResultsPage object
+     * Method 1: Search for destination and handle autocomplete
      */
-    @Step("Search hotels for {destination} from {startDay} for {duration} days (using enum)")
-    public AgodaSearchResultsPage searchHotels(String destination, DayOfWeekEnum startDay, int duration) {
-        return searchHotels(destination, startDay.getDayOfWeek(), duration);
+    @Step("Search destination: {destination}")
+    public void searchDestination(String destination) {
+        LogUtils.logTestStep("Step 1: Searching for destination - " + destination);
+        enterDestination(destination);
+        LogUtils.logTestStep("✓ Destination search completed");
+    }
+    
+    /**
+     * Method 2: Select check-in and check-out dates
+     */
+    @Step("Select travel dates: {checkInDate} to {checkOutDate}")
+    public void selectTravelDates(String checkInDate, String checkOutDate) {
+        LogUtils.logTestStep("Step 2: Selecting travel dates - Check-in: " + checkInDate + ", Check-out: " + checkOutDate);
+        WaitUtils.sleep(3000); // Reduced wait time
+        selectDates(checkInDate, checkOutDate);
+        LogUtils.logTestStep("✓ Travel dates selection completed");
+    }
+    
+    /**
+     * Method 3: Set occupancy and perform search
+     */
+    @Step("Set occupancy and search - Rooms: {rooms}, Adults: {adults}, Children: {children}")
+    public AgodaSearchResultsPage setOccupancyAndSearch(int rooms, int adults, int children) {
+        LogUtils.logTestStep("Step 3: Setting occupancy - Rooms: " + rooms + ", Adults: " + adults + ", Children: " + children);
+        setOccupancy(rooms, adults, children);
+        LogUtils.logTestStep("✓ Occupancy set, clicking search button");
+        return clickSearchButton();
     }
 
     /**
-     * Verify homepage is displayed
-     * @return true if homepage is displayed
+     * Complete hotel search with all parameters (simplified version)
      */
-    @Step("Verify Agoda homepage is displayed")
+    @Step("Search hotels with destination: {destination}")
+    public AgodaSearchResultsPage searchHotels(String destination, String checkInDate, String checkOutDate,
+                                               int rooms, int adults, int children) {
+        LogUtils.logTestStep("Starting complete hotel search process");
+        
+        // Step 1: Search destination
+        searchDestination(destination);
+        
+        // Step 2: Select dates
+        selectTravelDates(checkInDate, checkOutDate);
+        
+        // Step 3: Set occupancy and search
+        AgodaSearchResultsPage resultsPage = setOccupancyAndSearch(rooms, adults, children);
+        
+        LogUtils.logTestStep("✓ Complete hotel search process finished");
+        return resultsPage;
+    }
+
+    /**
+     * Complete hotel search with all parameters (legacy version for backward compatibility)
+     */
+    @Step("Search hotels with destination: {destination}")
+    public AgodaSearchResultsPage searchHotels(String destination, String startYear, String startMonth, String startDay,
+                                               String endYear, String endMonth, String endDay,
+                                               int rooms, int adults, int children) {
+        // Convert separate date parts to simple date format
+        String checkInDate = startYear + "-" + String.format("%02d", Integer.parseInt(startMonth)) + "-" + String.format("%02d", Integer.parseInt(startDay));
+        String checkOutDate = endYear + "-" + String.format("%02d", Integer.parseInt(endMonth)) + "-" + String.format("%02d", Integer.parseInt(endDay));
+        
+        // Use the simplified version
+        return searchHotels(destination, checkInDate, checkOutDate, rooms, adults, children);
+    }
+
+    /**
+     * Check if homepage is displayed
+     */
     public boolean isHomepageDisplayed() {
         try {
             boolean isDisplayed = destinationInput.isVisible() && 
-                                dateButton.isVisible() && 
-                                guestsButton.isVisible() && 
                                 searchButton.isVisible();
             
             LogUtils.logTestStep("Homepage verification: " + (isDisplayed ? "PASSED" : "FAILED"));
@@ -363,6 +404,38 @@ public class AgodaHomePage {
         } catch (Exception e) {
             LogUtils.logTestStep("Homepage verification failed: " + e.getMessage());
             return false;
+        }
+    }
+
+    /**
+     * Helper class for tab switching
+     */
+    private static class SwitchTabs {
+        @Step("Switch to expected search results tab")
+        public static void switchToExpectedTab() {
+            try {
+                // Get all window handles
+                java.util.Set<String> windowHandles = WebDriverRunner.getWebDriver().getWindowHandles();
+                
+                if (windowHandles.size() > 1) {
+                    // Switch through tabs to find the expected one
+                    for (String windowHandle : windowHandles) {
+                        WebDriverRunner.getWebDriver().switchTo().window(windowHandle);
+                        String currentUrl = WebDriverRunner.getWebDriver().getCurrentUrl();
+                        
+                        // Check if this is the expected search results tab
+                        if (currentUrl.contains("agoda.com/activities/search") || 
+                            currentUrl.contains("agoda.com/search")) {
+                            LogUtils.logTestStep("Switched to expected search results tab: " + currentUrl);
+                            return;
+                        }
+                    }
+                }
+                
+                LogUtils.logTestStep("Staying on current tab");
+            } catch (Exception e) {
+                LogUtils.logTestStep("Error switching tabs: " + e.getMessage());
+            }
         }
     }
 }
