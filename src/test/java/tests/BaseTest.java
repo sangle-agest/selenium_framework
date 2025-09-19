@@ -1,6 +1,6 @@
 package tests;
 
-import core.config.ConfigManager;
+import core.constants.ApplicationConstants;
 import core.driver.BrowserManager;
 import core.reporting.ScreenshotHandler;
 import core.utils.LogUtils;
@@ -14,7 +14,6 @@ import org.testng.annotations.*;
  */
 public abstract class BaseTest {
     protected final Logger logger = LoggerFactory.getLogger(this.getClass());
-    protected final ConfigManager config = ConfigManager.getInstance();
 
     /**
      * Suite setup - runs once before all tests in the suite
@@ -29,9 +28,9 @@ public abstract class BaseTest {
         LogUtils.logEnvironmentInfo("OS", System.getProperty("os.name"));
         LogUtils.logEnvironmentInfo("OS Version", System.getProperty("os.version"));
         LogUtils.logEnvironmentInfo("User", System.getProperty("user.name"));
-        LogUtils.logEnvironmentInfo("Browser", config.getBrowser());
-        LogUtils.logEnvironmentInfo("Headless", String.valueOf(config.isHeadless()));
-        LogUtils.logEnvironmentInfo("Base URL", config.getBaseUrl());
+        LogUtils.logEnvironmentInfo("Browser", ApplicationConstants.Browser.BROWSER_TYPE);
+        LogUtils.logEnvironmentInfo("Headless", String.valueOf(ApplicationConstants.Browser.IS_HEADLESS));
+        LogUtils.logEnvironmentInfo("Base URL", ApplicationConstants.URLs.BASE_URL);
         
         // Clean up old screenshots
         ScreenshotHandler.cleanupOldScreenshots(7);
@@ -74,12 +73,12 @@ public abstract class BaseTest {
         // Take screenshot based on test result
         try {
             if (result.getStatus() == ITestResult.FAILURE) {
-                if (config.isScreenshotOnFailure()) {
+                if (ApplicationConstants.TestConfig.SCREENSHOT_ON_FAILURE) {
                     ScreenshotHandler.takeFailureScreenshot(testName, result.getThrowable());
                 }
                 LogUtils.logTestResult(testName, "FAILED", 0);
             } else if (result.getStatus() == ITestResult.SUCCESS) {
-                if (config.isScreenshotOnSuccess()) {
+                if (ApplicationConstants.TestConfig.SCREENSHOT_ON_SUCCESS) {
                     ScreenshotHandler.takeScreenshot(testName, "success");
                 }
                 LogUtils.logTestResult(testName, "PASSED", 0);
@@ -149,7 +148,7 @@ public abstract class BaseTest {
     protected String getTestParameter(String parameterName, String defaultValue) {
         // This would be implemented with TestNG's ITestContext in real scenarios
         // For now, return config value or default
-        String value = config.getProperty(parameterName, defaultValue);
+        String value = ApplicationConstants.getProperty(parameterName, defaultValue);
         LogUtils.logTestData(parameterName, value);
         return value;
     }
@@ -158,7 +157,7 @@ public abstract class BaseTest {
      * Navigate to application base URL
      */
     protected void navigateToApplication() {
-        String baseUrl = config.getBaseUrl();
+        String baseUrl = ApplicationConstants.URLs.BASE_URL;
         LogUtils.logBrowserAction("Navigate to application", baseUrl);
         BrowserManager.openBrowser();
     }

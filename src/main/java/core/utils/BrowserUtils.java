@@ -274,7 +274,7 @@ public class BrowserUtils {
         logger.info("Taking screenshot and saving to file");
         try {
             String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
-            String fileName = "screenshot_" + timestamp + ".png";
+            String fileName = "screenshot_" + timestamp;  // Remove .png extension here
             
             String filePath = Selenide.screenshot(fileName);
             logger.debug("Raw Selenide screenshot path: {}", filePath);

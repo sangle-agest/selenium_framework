@@ -1,4 +1,4 @@
-package tests;
+package tests.theinternet;
 
 import core.elements.FileUpload;
 import core.utils.JavaScriptUtils;
@@ -9,6 +9,7 @@ import io.qameta.allure.Feature;
 import io.qameta.allure.Story;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+import tests.BaseTest;
 
 import java.time.Duration;
 import java.util.Set;

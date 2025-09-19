@@ -48,7 +48,7 @@
             </run>
         </groups>
         <classes>
-            <class name="tests.TheInternetTests">
+            <class name="tests.theinternet.TheInternetTests">
                 <methods>
                     <include name="testCheckboxInteractions"/>
                     <include name="testDropdownInteractions"/>
@@ -56,7 +56,7 @@
                     <include name="testFrameworkCapabilities"/>
                 </methods>
             </class>
-            <class name="tests.AdvancedElementsTests">
+            <class name="tests.theinternet.AdvancedElementsTests">
                 <methods>
                     <include name="testElementProperties"/>
                 </methods>
@@ -78,7 +78,7 @@
             </run>
         </groups>
         <classes>
-            <class name="tests.TheInternetTests"/>
+            <class name="tests.theinternet.TheInternetTests"/>
         </classes>
     </test>
     
@@ -96,7 +96,7 @@
             </run>
         </groups>
         <classes>
-            <class name="tests.AdvancedElementsTests"/>
+            <class name="tests.theinternet.AdvancedElementsTests"/>
         </classes>
     </test>
     
@@ -115,7 +115,7 @@
             </run>
         </groups>
         <classes>
-            <class name="tests.SpecializedFeaturesTests"/>
+            <class name="tests.theinternet.SpecializedFeaturesTests"/>
         </classes>
     </test>
     
@@ -129,9 +129,9 @@
         </groups>
         <classes>
             <class name="tests.LoginTests"/>
-            <class name="tests.TheInternetTests"/>
-            <class name="tests.AdvancedElementsTests"/>
-            <class name="tests.SpecializedFeaturesTests"/>
+            <class name="tests.theinternet.TheInternetTests"/>
+            <class name="tests.theinternet.AdvancedElementsTests"/>
+            <class name="tests.theinternet.SpecializedFeaturesTests"/>
         </classes>
     </test>
 

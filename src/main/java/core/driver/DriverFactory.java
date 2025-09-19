@@ -1,6 +1,6 @@
 package core.driver;
 
-import core.config.ConfigManager;
+import core.constants.ApplicationConstants;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
@@ -24,15 +24,14 @@ import java.util.Map;
  */
 public class DriverFactory {
     private static final Logger logger = LoggerFactory.getLogger(DriverFactory.class);
-    private static final ConfigManager config = ConfigManager.getInstance();
 
     /**
      * Create WebDriver instance based on configuration
      * @return Configured WebDriver instance
      */
     public static WebDriver createDriver() {
-        String browser = config.getBrowser().toLowerCase();
-        boolean isRemote = config.isRemoteExecution();
+        String browser = ApplicationConstants.Browser.BROWSER_TYPE.toLowerCase();
+        boolean isRemote = ApplicationConstants.Remote.IS_REMOTE_EXECUTION;
         
         logger.info("Creating {} driver for {} execution", browser, isRemote ? "remote" : "local");
         
@@ -71,7 +70,7 @@ public class DriverFactory {
      */
     private static WebDriver createRemoteDriver(String browser) {
         try {
-            URL remoteUrl = new URL(config.getRemoteUrl());
+            URL remoteUrl = new URL(ApplicationConstants.Remote.REMOTE_URL);
             return switch (browser) {
                 case "chrome" -> new RemoteWebDriver(remoteUrl, getChromeOptions());
                 case "firefox" -> new RemoteWebDriver(remoteUrl, getFirefoxOptions());
@@ -82,7 +81,7 @@ public class DriverFactory {
                 }
             };
         } catch (MalformedURLException e) {
-            logger.error("Invalid remote URL: {}", config.getRemoteUrl(), e);
+            logger.error("Invalid remote URL: {}", ApplicationConstants.Remote.REMOTE_URL, e);
             throw new RuntimeException("Failed to create remote driver", e);
         }
     }
@@ -94,7 +93,7 @@ public class DriverFactory {
     private static ChromeOptions getChromeOptions() {
         ChromeOptions options = new ChromeOptions();
         
-        if (config.isHeadless()) {
+        if (ApplicationConstants.Browser.IS_HEADLESS) {
             options.addArguments("--headless=new");
         }
         
@@ -110,20 +109,20 @@ public class DriverFactory {
             "--remote-allow-origins=*"
         );
         
-        if (config.shouldMaximizeBrowser()) {
+        if (ApplicationConstants.Browser.SHOULD_MAXIMIZE) {
             options.addArguments("--start-maximized");
         }
         
         // Download preferences
         Map<String, Object> prefs = new HashMap<>();
-        prefs.put("download.default_directory", config.getDownloadPath());
+        prefs.put("download.default_directory", ApplicationConstants.TestConfig.DOWNLOAD_PATH);
         prefs.put("download.prompt_for_download", false);
         prefs.put("download.directory_upgrade", true);
         prefs.put("safebrowsing.enabled", true);
         options.setExperimentalOption("prefs", prefs);
         
         logger.debug("Chrome options configured: headless={}, maximize={}", 
-                    config.isHeadless(), config.shouldMaximizeBrowser());
+                    ApplicationConstants.Browser.IS_HEADLESS, ApplicationConstants.Browser.SHOULD_MAXIMIZE);
         
         return options;
     }
@@ -135,7 +134,7 @@ public class DriverFactory {
     private static FirefoxOptions getFirefoxOptions() {
         FirefoxOptions options = new FirefoxOptions();
         
-        if (config.isHeadless()) {
+        if (ApplicationConstants.Browser.IS_HEADLESS) {
             options.addArguments("--headless");
         }
         
@@ -144,11 +143,11 @@ public class DriverFactory {
         
         // Download preferences
         options.addPreference("browser.download.folderList", 2);
-        options.addPreference("browser.download.dir", config.getDownloadPath());
+        options.addPreference("browser.download.dir", ApplicationConstants.TestConfig.DOWNLOAD_PATH);
         options.addPreference("browser.helperApps.neverAsk.saveToDisk", 
                               "application/pdf,application/zip,text/csv,application/vnd.ms-excel");
         
-        logger.debug("Firefox options configured: headless={}", config.isHeadless());
+        logger.debug("Firefox options configured: headless={}", ApplicationConstants.Browser.IS_HEADLESS);
         
         return options;
     }
@@ -160,7 +159,7 @@ public class DriverFactory {
     private static EdgeOptions getEdgeOptions() {
         EdgeOptions options = new EdgeOptions();
         
-        if (config.isHeadless()) {
+        if (ApplicationConstants.Browser.IS_HEADLESS) {
             options.addArguments("--headless=new");
         }
         
@@ -174,18 +173,18 @@ public class DriverFactory {
             "--remote-allow-origins=*"
         );
         
-        if (config.shouldMaximizeBrowser()) {
+        if (ApplicationConstants.Browser.SHOULD_MAXIMIZE) {
             options.addArguments("--start-maximized");
         }
         
         // Download preferences
         Map<String, Object> prefs = new HashMap<>();
-        prefs.put("download.default_directory", config.getDownloadPath());
+        prefs.put("download.default_directory", ApplicationConstants.TestConfig.DOWNLOAD_PATH);
         prefs.put("download.prompt_for_download", false);
         options.setExperimentalOption("prefs", prefs);
         
         logger.debug("Edge options configured: headless={}, maximize={}", 
-                    config.isHeadless(), config.shouldMaximizeBrowser());
+                    ApplicationConstants.Browser.IS_HEADLESS, ApplicationConstants.Browser.SHOULD_MAXIMIZE);
         
         return options;
     }
@@ -196,17 +195,17 @@ public class DriverFactory {
      */
     private static void configureDriver(WebDriver driver) {
         driver.manage().timeouts()
-            .implicitlyWait(Duration.ofSeconds(config.getImplicitWait()))
-            .pageLoadTimeout(Duration.ofSeconds(config.getPageLoadTimeout() / 1000))
-            .scriptTimeout(Duration.ofSeconds(config.getScriptTimeout() / 1000));
+            .implicitlyWait(Duration.ofSeconds(ApplicationConstants.Timeouts.IMPLICIT_WAIT))
+            .pageLoadTimeout(Duration.ofSeconds(ApplicationConstants.Timeouts.PAGE_LOAD_TIMEOUT / 1000))
+            .scriptTimeout(Duration.ofSeconds(ApplicationConstants.Timeouts.SCRIPT_TIMEOUT / 1000));
         
-        if (config.shouldMaximizeBrowser() && !config.isHeadless()) {
+        if (ApplicationConstants.Browser.SHOULD_MAXIMIZE && !ApplicationConstants.Browser.IS_HEADLESS) {
             driver.manage().window().maximize();
         }
         
         logger.info("Driver configured with timeouts - implicit: {}s, pageLoad: {}ms, script: {}ms",
-                   config.getImplicitWait(), 
-                   config.getPageLoadTimeout(), 
-                   config.getScriptTimeout());
+                   ApplicationConstants.Timeouts.IMPLICIT_WAIT, 
+                   ApplicationConstants.Timeouts.PAGE_LOAD_TIMEOUT, 
+                   ApplicationConstants.Timeouts.SCRIPT_TIMEOUT);
     }
 }

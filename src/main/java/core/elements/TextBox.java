@@ -32,7 +32,7 @@ public class TextBox extends BaseElement {
      * @param text Text to type
      * @return This TextBox for method chaining
      */
-    @Step("Type '{text}' into textbox [{elementName}]")
+    @Step("Type text into textbox")
     public TextBox type(String text) {
         logger.info("Typing '{}' into textbox [{}]", text, elementName);
         try {
@@ -50,7 +50,7 @@ public class TextBox extends BaseElement {
      * @param text Text to send
      * @return This TextBox for method chaining
      */
-    @Step("Send keys '{text}' to textbox [{elementName}]")
+    @Step("Send keys to textbox")
     public TextBox sendKeys(String text) {
         logger.info("Sending keys '{}' to textbox [{}]", text, elementName);
         try {
@@ -68,7 +68,7 @@ public class TextBox extends BaseElement {
      * @param text Text to set
      * @return This TextBox for method chaining
      */
-    @Step("Set value '{text}' in textbox [{elementName}]")
+        @Step("Type text into textbox")
     public TextBox setValue(String text) {
         logger.info("Setting value '{}' in textbox [{}]", text, elementName);
         try {
@@ -85,7 +85,7 @@ public class TextBox extends BaseElement {
      * Clear the textbox
      * @return This TextBox for method chaining
      */
-    @Step("Clear textbox [{elementName}]")
+    @Step("Clear textbox")
     public TextBox clear() {
         logger.info("Clearing textbox [{}]", elementName);
         try {
@@ -103,7 +103,7 @@ public class TextBox extends BaseElement {
      * @param text Text to set
      * @return This TextBox for method chaining
      */
-    @Step("Clear and set value '{text}' in textbox [{elementName}]")
+    @Step("Clear and set value in textbox")
     public TextBox clearAndType(String text) {
         logger.info("Clearing and typing '{}' into textbox [{}]", text, elementName);
         clear();
@@ -115,7 +115,7 @@ public class TextBox extends BaseElement {
      * Press Enter key
      * @return This TextBox for method chaining
      */
-    @Step("Press Enter in textbox [{elementName}]")
+    @Step("Press Enter in textbox")
     public TextBox pressEnter() {
         logger.info("Pressing Enter in textbox [{}]", elementName);
         try {
@@ -132,7 +132,7 @@ public class TextBox extends BaseElement {
      * Press Tab key
      * @return This TextBox for method chaining
      */
-    @Step("Press Tab in textbox [{elementName}]")
+    @Step("Press Tab in textbox")
     public TextBox pressTab() {
         logger.info("Pressing Tab in textbox [{}]", elementName);
         try {
@@ -149,7 +149,7 @@ public class TextBox extends BaseElement {
      * Press Escape key
      * @return This TextBox for method chaining
      */
-    @Step("Press Escape in textbox [{elementName}]")
+    @Step("Press Escape in textbox")
     public TextBox pressEscape() {
         logger.info("Pressing Escape in textbox [{}]", elementName);
         try {
@@ -166,7 +166,7 @@ public class TextBox extends BaseElement {
      * Select all text in textbox
      * @return This TextBox for method chaining
      */
-    @Step("Select all text in textbox [{elementName}]")
+    @Step("Select all text in textbox")
     public TextBox selectAll() {
         logger.info("Selecting all text in textbox [{}]", elementName);
         try {
@@ -183,7 +183,7 @@ public class TextBox extends BaseElement {
      * Get placeholder text
      * @return Placeholder text
      */
-    @Step("Get placeholder from textbox [{elementName}]")
+    @Step("Get placeholder from textbox")
     public String getPlaceholder() {
         logger.info("Getting placeholder from textbox [{}]", elementName);
         try {
@@ -200,7 +200,7 @@ public class TextBox extends BaseElement {
      * Check if textbox is empty
      * @return True if empty, false otherwise
      */
-    @Step("Check if textbox [{elementName}] is empty")
+    @Step("Check if textbox is empty")
     public boolean isEmpty() {
         String value = getValue();
         boolean empty = value == null || value.trim().isEmpty();

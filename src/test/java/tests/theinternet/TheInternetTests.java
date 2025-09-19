@@ -1,5 +1,6 @@
-package tests;
+package tests.theinternet;
 
+import core.constants.ApplicationConstants;
 import io.qameta.allure.Description;
 import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;
@@ -9,6 +10,7 @@ import org.testng.annotations.Test;
 import pages.theinternet.CheckboxesPage;
 import pages.theinternet.DragAndDropPage;
 import pages.theinternet.DropdownPage;
+import tests.BaseTest;
 
 import static com.codeborne.selenide.Selenide.open;
 
@@ -233,9 +235,9 @@ public class TheInternetTests extends BaseTest {
         
         // Demonstrate logging capabilities
         logStep("Demonstrating logging capabilities");
-        logTestData("Test Environment", config.getBrowser());
-        logTestData("Base URL", config.getBaseUrl());
-        logTestData("Headless Mode", config.isHeadless());
+        logTestData("Test Environment", ApplicationConstants.Browser.BROWSER_TYPE);
+        logTestData("Base URL", ApplicationConstants.URLs.BASE_URL);
+        logTestData("Headless Mode", ApplicationConstants.Browser.IS_HEADLESS);
         
         // Demonstrate screenshot capabilities
         logStep("Demonstrating screenshot capabilities");
