@@ -249,6 +249,14 @@ public class LogUtils {
     }
 
     /**
+     * Log general information
+     * @param message Info message
+     */
+    public static void logInfo(String message) {
+        logger.info("{}", message);
+    }
+
+    /**
      * Attach text log to Allure report
      * @param logContent Log content
      * @param attachmentName Attachment name
