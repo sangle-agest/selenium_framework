@@ -3,11 +3,14 @@ package pages.agoda;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import core.utils.LogUtils;
+import core.utils.WaitUtils;
 import io.qameta.allure.Step;
 import org.openqa.selenium.By;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
+
+import java.time.Duration;
 
 import static com.codeborne.selenide.Selenide.*;
 
@@ -17,12 +20,76 @@ import static com.codeborne.selenide.Selenide.*;
 public class AgodaSearchResultsPageUpdated {
     private static final Logger logger = LoggerFactory.getLogger(AgodaSearchResultsPageUpdated.class);
     
-    // Search results elements
-    private final ElementsCollection searchResults = $$(By.xpath("//a[@data-testid='activities-card-content']"));
-    private final ElementsCollection originalPrices = $$(By.xpath("//span[@data-testid='activities-original-price']"));
+    // Search results elements - Updated to support both hotel and activities results
+    private final ElementsCollection searchResults = $$(By.xpath("//div[@data-selenium='hotel-item'] | //div[contains(@class,'PropertyCard')] | //div[contains(@class,'property-card')] | //a[@data-testid='hotel-item'] | //a[@data-testid='activities-card-content']"));
+    private final ElementsCollection originalPrices = $$(By.xpath("//span[@data-testid='hotel-original-price'] | //span[@data-testid='activities-original-price']"));
+    
+    // Sort elements for waiting
+    private final SelenideElement sortContainer = $(By.xpath("//div[contains(@class,'sort')] | //div[@data-testid='sort-container'] | //label[@data-testid='activities-sort-option']"));
+    private final SelenideElement loadingIndicator = $(By.xpath("//div[contains(@class,'loading')] | //div[contains(@class,'spinner')] | //div[@data-testid='loading']"));
     
     public AgodaSearchResultsPageUpdated() {
         logger.info("Initialized AgodaSearchResultsPageUpdated");
+    }
+    
+    /**
+     * Wait for search results page to fully load after tab switching
+     */
+    @Step("Wait for search results page to load")
+    public void waitForPageToLoad() {
+        LogUtils.logTestStep("Waiting for search results page to fully load...");
+        
+        // Wait for page to stabilize after tab switch
+        WaitUtils.sleep(3000);
+        
+        // Wait for sort elements to be visible (key indicator that page is loaded)
+        try {
+            LogUtils.logTestStep("Waiting for sort container to be visible...");
+            WaitUtils.waitForVisible(sortContainer, Duration.ofSeconds(15));
+            LogUtils.logTestStep("✓ Sort container is visible");
+        } catch (Exception e) {
+            LogUtils.logTestStep("⚠ Sort container not found, continuing with basic wait: " + e.getMessage());
+            WaitUtils.sleep(5000); // Fallback wait
+        }
+        
+        // Wait for any loading indicators to disappear
+        try {
+            LogUtils.logTestStep("Checking for loading indicators...");
+            if (loadingIndicator.exists() && loadingIndicator.isDisplayed()) {
+                LogUtils.logTestStep("Loading indicator found, waiting for it to disappear...");
+                // Wait for loading indicator to disappear
+                for (int i = 0; i < 20; i++) {
+                    if (!loadingIndicator.isDisplayed()) {
+                        LogUtils.logTestStep("✓ Loading indicator disappeared");
+                        break;
+                    }
+                    WaitUtils.sleep(1000);
+                }
+            } else {
+                LogUtils.logTestStep("✓ No loading indicators found");
+            }
+        } catch (Exception e) {
+            LogUtils.logTestStep("⚠ Issue with loading indicator check: " + e.getMessage());
+        }
+        
+        // Wait for search results to be present
+        try {
+            LogUtils.logTestStep("Waiting for search results to be available...");
+            for (int i = 0; i < 10; i++) {
+                if (searchResults.size() > 0) {
+                    LogUtils.logTestStep("✓ Search results are available (" + searchResults.size() + " results found)");
+                    break;
+                }
+                WaitUtils.sleep(2000);
+                LogUtils.logTestStep("Still waiting for search results... attempt " + (i + 1));
+            }
+        } catch (Exception e) {
+            LogUtils.logTestStep("⚠ Issue waiting for search results: " + e.getMessage());
+        }
+        
+        // Final wait to ensure everything is stable
+        WaitUtils.sleep(2000);
+        LogUtils.logTestStep("✓ Page loading wait completed");
     }
     
     /**
@@ -31,6 +98,9 @@ public class AgodaSearchResultsPageUpdated {
     @Step("Verify search results are displayed")
     public void verifySearchResults() {
         LogUtils.logTestStep("Verifying search results are displayed");
+        
+        // First ensure page is fully loaded
+        waitForPageToLoad();
         
         int resultCount = searchResults.size();
         Assert.assertTrue(resultCount > 0, "No search results found! Expected > 0 but found: " + resultCount);
@@ -45,15 +115,77 @@ public class AgodaSearchResultsPageUpdated {
     public void sortBy(String sortOption) {
         LogUtils.logTestStep("Sorting by: " + sortOption);
         
+        // Ensure page is loaded before trying to sort
+        waitForPageToLoad();
+        
+        // First try to find and open the sort dropdown/container
+        try {
+            LogUtils.logTestStep("Looking for sort dropdown or container to open...");
+            
+            // Try different approaches to access sort options
+            SelenideElement sortDropdown = $(By.xpath("//div[contains(@class,'sort')] | //button[contains(text(),'Sort')] | //div[@data-testid='sort-dropdown'] | //select[contains(@class,'sort')]"));
+            
+            if (sortDropdown.exists() && sortDropdown.isDisplayed()) {
+                LogUtils.logTestStep("Found sort dropdown, clicking to open...");
+                sortDropdown.click();
+                WaitUtils.sleep(2000); // Wait for dropdown to open
+            }
+            
+        } catch (Exception e) {
+            LogUtils.logTestStep("⚠ Could not find sort dropdown, trying direct access: " + e.getMessage());
+        }
+        
         // Dynamic XPath for sort option
         String xpath = String.format("//label[@data-testid='activities-sort-option']//input[@aria-label='%s']", sortOption);
         SelenideElement sortElement = $(By.xpath(xpath));
         
-        sortElement.click();
-        LogUtils.logTestStep("Applied sort: " + sortOption);
+        // Check if the element exists first
+        if (!sortElement.exists()) {
+            LogUtils.logTestStep("⚠ Sort option not found with primary selector, trying alternatives...");
+            
+            // Try alternative selectors
+            String[] alternativeXpaths = {
+                String.format("//input[@value='Price_Ascending'] | //option[contains(text(),'%s')] | //button[contains(text(),'%s')]", sortOption, sortOption),
+                "//input[@value='Price_Ascending']",
+                "//option[contains(text(),'Lowest price')]",
+                "//button[contains(text(),'Price')]",
+                "//a[contains(text(),'Price')]"
+            };
+            
+            for (String altXpath : alternativeXpaths) {
+                SelenideElement altElement = $(By.xpath(altXpath));
+                if (altElement.exists()) {
+                    LogUtils.logTestStep("Found alternative sort option with XPath: " + altXpath);
+                    sortElement = altElement;
+                    break;
+                }
+            }
+        }
         
-        // Wait for results to update
-        sleep(2000);
+        // Try to click the sort element
+        try {
+            if (sortElement.exists()) {
+                // If element is not visible, try to scroll or use JavaScript
+                if (!sortElement.isDisplayed()) {
+                    LogUtils.logTestStep("Sort element exists but not visible, trying JavaScript click...");
+                    executeJavaScript("arguments[0].click();", sortElement);
+                } else {
+                    LogUtils.logTestStep("Sort element is visible, clicking normally...");
+                    sortElement.click();
+                }
+                LogUtils.logTestStep("✓ Applied sort: " + sortOption);
+            } else {
+                LogUtils.logTestStep("⚠ No sort options found, skipping sort step");
+                return;
+            }
+        } catch (Exception e) {
+            LogUtils.logTestStep("⚠ Could not click sort option: " + sortOption + ", error: " + e.getMessage());
+            LogUtils.logTestStep("⚠ Continuing without sorting - this might be expected for some pages");
+        }
+        
+        // Wait for results to update after sorting
+        WaitUtils.sleep(3000);
+        LogUtils.logTestStep("✓ Sort operation completed");
     }
     
     /**

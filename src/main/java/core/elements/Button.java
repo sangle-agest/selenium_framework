@@ -30,7 +30,7 @@ public class Button extends BaseElement {
      * @return This Button for method chaining
      */
     @Override
-    @Step("Click button [{elementName}]")
+    @Step("Click button")
     public Button click() {
         logger.info("Clicking button [{}]", elementName);
         super.click();
@@ -41,7 +41,7 @@ public class Button extends BaseElement {
      * Submit the button (for submit type buttons)
      * @return This Button for method chaining
      */
-    @Step("Submit button [{elementName}]")
+    @Step("Submit button")
     public Button submit() {
         logger.info("Submitting button [{}]", elementName);
         try {

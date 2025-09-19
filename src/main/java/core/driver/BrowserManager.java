@@ -2,6 +2,7 @@ package core.driver;
 
 import com.codeborne.selenide.Configuration;
 import com.codeborne.selenide.Selenide;
+import com.codeborne.selenide.WebDriverRunner;
 import com.codeborne.selenide.logevents.SelenideLogger;
 import core.config.ConfigManager;
 import io.qameta.allure.selenide.AllureSelenide;
@@ -120,10 +121,22 @@ public class BrowserManager {
      */
     public static void closeBrowser() {
         try {
-            Selenide.closeWindow();
-            logger.info("Browser window closed");
+            // Check if WebDriver is still active before attempting to close
+            if (WebDriverRunner.hasWebDriverStarted() && WebDriverRunner.getWebDriver() != null) {
+                // Check if the current window is still available
+                try {
+                    WebDriverRunner.getWebDriver().getWindowHandle();
+                    Selenide.closeWindow();
+                    logger.info("Browser window closed");
+                } catch (org.openqa.selenium.NoSuchWindowException e) {
+                    logger.debug("Browser window was already closed");
+                }
+            } else {
+                logger.debug("WebDriver not active, no browser to close");
+            }
         } catch (Exception e) {
-            logger.warn("Error closing browser window: {}", e.getMessage());
+            // Only log as debug to avoid cluttering logs with expected cleanup warnings
+            logger.debug("Error closing browser window (this is usually harmless during teardown): {}", e.getMessage());
         }
     }
 
@@ -132,10 +145,16 @@ public class BrowserManager {
      */
     public static void quitBrowser() {
         try {
-            Selenide.closeWebDriver();
-            logger.info("All browser windows closed and WebDriver quit");
+            // Check if WebDriver is still active before attempting to quit
+            if (WebDriverRunner.hasWebDriverStarted() && WebDriverRunner.getWebDriver() != null) {
+                Selenide.closeWebDriver();
+                logger.info("All browser windows closed and WebDriver quit");
+            } else {
+                logger.debug("WebDriver not active, no browser to quit");
+            }
         } catch (Exception e) {
-            logger.warn("Error quitting browser: {}", e.getMessage());
+            // Only log as debug to avoid cluttering logs with expected cleanup warnings
+            logger.debug("Error quitting browser (this is usually harmless during teardown): {}", e.getMessage());
         }
     }
 

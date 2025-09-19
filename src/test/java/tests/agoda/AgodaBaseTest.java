@@ -105,8 +105,9 @@ public class AgodaBaseTest {
         LogUtils.logSection("SUITE TEARDOWN");
         logger.info("Agoda test suite execution completed");
         
-        // Final cleanup
-        BrowserManager.closeBrowser();
+        // Final cleanup - use quitBrowser instead of closeBrowser for suite teardown
+        // This will only try to quit if the browser is still active
+        BrowserManager.quitBrowser();
         
         logger.info("Agoda suite teardown completed");
     }

@@ -33,13 +33,9 @@ public class TC01_UpdatedSearchAndSortHotelTest extends AgodaBaseTest {
         String destination = "Da Nang";
         String sortOption = "Lowest price first";
         
-        // Dates - using current date + offsets
-        String startYear = "2025";
-        String startMonth = "09";
-        String startDay = "27";
-        String endYear = "2025";
-        String endMonth = "09";
-        String endDay = "30";
+        // Dates - using simple date format (changed to October for better availability)
+        String checkInDate = "2025-10-01";
+        String checkOutDate = "2025-10-05";
         
         // Occupancy
         int rooms = 2;
@@ -48,8 +44,8 @@ public class TC01_UpdatedSearchAndSortHotelTest extends AgodaBaseTest {
         
         LogUtils.logTestStep("Starting TC01: Updated Search and Sort Hotel Successfully");
         LogUtils.logTestData("Destination", destination);
-        LogUtils.logTestData("Check-in Date", startYear + "-" + startMonth + "-" + startDay);
-        LogUtils.logTestData("Check-out Date", endYear + "-" + endMonth + "-" + endDay);
+        LogUtils.logTestData("Check-in Date", checkInDate);
+        LogUtils.logTestData("Check-out Date", checkOutDate);
         LogUtils.logTestData("Rooms", String.valueOf(rooms));
         LogUtils.logTestData("Adults", String.valueOf(adults));
         LogUtils.logTestData("Children", String.valueOf(children));
@@ -58,15 +54,24 @@ public class TC01_UpdatedSearchAndSortHotelTest extends AgodaBaseTest {
         // Step 1: Initialize homepage (already navigated by AgodaBaseTest)
         AgodaHomePageUpdated homePage = new AgodaHomePageUpdated();
         
-        // Verify homepage is loaded
+        // Verify homepage is loaded 
         Assert.assertTrue(homePage.isHomepageDisplayed(), 
             "Agoda homepage should be displayed");
         LogUtils.logTestStep("✓ Agoda homepage loaded successfully");
         
-        // Step 2-5: Perform complete hotel search
-        AgodaSearchResultsPageUpdated resultsPage = homePage.searchHotels(
-            destination, startYear, startMonth, startDay,
-            endYear, endMonth, endDay, rooms, adults, children);
+        // Option A: Use the 3 separate methods for detailed debugging
+        // Step 2: Search for destination
+        homePage.searchDestination(destination);
+        
+        // Step 3: Select travel dates
+        homePage.selectTravelDates(checkInDate, checkOutDate);
+        
+        // Step 4: Set occupancy and perform search
+        AgodaSearchResultsPageUpdated resultsPage = homePage.setOccupancyAndSearch(rooms, adults, children);
+        
+        // Option B: Use the simplified single method (commented out - you can choose)
+        // AgodaSearchResultsPageUpdated resultsPage = homePage.searchHotels(
+        //     destination, checkInDate, checkOutDate, rooms, adults, children);
         
         LogUtils.logTestStep("✓ Hotel search completed successfully");
         
