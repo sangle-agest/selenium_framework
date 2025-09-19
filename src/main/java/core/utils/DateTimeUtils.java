@@ -578,4 +578,213 @@ public class DateTimeUtils {
             throw new RuntimeException("Failed to get last day of month", e);
         }
     }
+
+    /**
+     * Parses dynamic date placeholders and returns actual date string.
+     * Supports expressions like <TODAY>, <NEXT_FRIDAY>, <NEXT_FROM_CHECK_IN_DATE_X_DAY>, etc.
+     * 
+     * @param dateExpression The date expression to parse (e.g., "<TODAY>", "<NEXT_FRIDAY>")
+     * @return Formatted date string in yyyy-MM-dd format
+     * @throws RuntimeException if the placeholder is not supported or parsing fails
+     */
+    public static String parseDatePlaceholder(String dateExpression) {
+        return parseDatePlaceholder(dateExpression, null);
+    }
+
+    /**
+     * Parses dynamic date placeholders and returns actual date string.
+     * Supports expressions like <TODAY>, <NEXT_FRIDAY>, <NEXT_FROM_CHECK_IN_DATE_X_DAY>, etc.
+     * 
+     * @param dateExpression The date expression to parse (e.g., "<TODAY>", "<NEXT_FRIDAY>")
+     * @param referenceDate Reference date for relative calculations (optional, defaults to today)
+     * @return Formatted date string in yyyy-MM-dd format
+     * @throws RuntimeException if the placeholder is not supported or parsing fails
+     */
+    public static String parseDatePlaceholder(String dateExpression, String referenceDate) {
+        try {
+            // If it's not a placeholder (doesn't start with < and end with >), return as is
+            if (!dateExpression.startsWith("<") || !dateExpression.endsWith(">")) {
+                logger.debug("Not a placeholder expression, returning as is: {}", dateExpression);
+                return dateExpression;
+            }
+
+            // Extract the placeholder content (remove < and >)
+            String placeholder = dateExpression.substring(1, dateExpression.length() - 1).toUpperCase();
+            logger.debug("Processing placeholder: {}", placeholder);
+
+            LocalDate baseDate = LocalDate.now();
+            if (referenceDate != null && !referenceDate.trim().isEmpty()) {
+                try {
+                    baseDate = LocalDate.parse(referenceDate, DATE_FORMAT);
+                    logger.debug("Using reference date: {}", referenceDate);
+                } catch (Exception e) {
+                    logger.warn("Failed to parse reference date '{}', using current date instead: {}", referenceDate, e.getMessage());
+                }
+            }
+
+            LocalDate resultDate;
+            DateTimeFormatter formatter = DATE_FORMAT;
+
+            switch (placeholder) {
+                case "TODAY":
+                    resultDate = baseDate;
+                    break;
+
+                case "TOMORROW":
+                    resultDate = baseDate.plusDays(1);
+                    break;
+
+                case "YESTERDAY":
+                    resultDate = baseDate.minusDays(1);
+                    break;
+
+                case "NEXT_FRIDAY":
+                    resultDate = getNextDayOfWeek(baseDate, DayOfWeek.FRIDAY);
+                    break;
+
+                case "NEXT_MONDAY":
+                    resultDate = getNextDayOfWeek(baseDate, DayOfWeek.MONDAY);
+                    break;
+
+                case "NEXT_TUESDAY":
+                    resultDate = getNextDayOfWeek(baseDate, DayOfWeek.TUESDAY);
+                    break;
+
+                case "NEXT_WEDNESDAY":
+                    resultDate = getNextDayOfWeek(baseDate, DayOfWeek.WEDNESDAY);
+                    break;
+
+                case "NEXT_THURSDAY":
+                    resultDate = getNextDayOfWeek(baseDate, DayOfWeek.THURSDAY);
+                    break;
+
+                case "NEXT_SATURDAY":
+                    resultDate = getNextDayOfWeek(baseDate, DayOfWeek.SATURDAY);
+                    break;
+
+                case "NEXT_SUNDAY":
+                    resultDate = getNextDayOfWeek(baseDate, DayOfWeek.SUNDAY);
+                    break;
+
+                case "NEXT_WEEK":
+                    resultDate = baseDate.plusWeeks(1);
+                    break;
+
+                case "NEXT_MONTH":
+                    resultDate = baseDate.plusMonths(1);
+                    break;
+
+                case "FIRST_DAY_OF_MONTH":
+                    resultDate = baseDate.withDayOfMonth(1);
+                    break;
+
+                case "LAST_DAY_OF_MONTH":
+                    resultDate = baseDate.withDayOfMonth(baseDate.lengthOfMonth());
+                    break;
+
+                case "FIRST_DAY_OF_NEXT_MONTH":
+                    resultDate = baseDate.plusMonths(1).withDayOfMonth(1);
+                    break;
+
+                case "LAST_DAY_OF_NEXT_MONTH":
+                    LocalDate nextMonth = baseDate.plusMonths(1);
+                    resultDate = nextMonth.withDayOfMonth(nextMonth.lengthOfMonth());
+                    break;
+
+                default:
+                    // Handle dynamic patterns like NEXT_FROM_CHECK_IN_DATE_X_DAY
+                    if (placeholder.startsWith("NEXT_FROM_CHECK_IN_DATE_") && placeholder.endsWith("_DAY")) {
+                        // Extract number of days from pattern like NEXT_FROM_CHECK_IN_DATE_3_DAY
+                        String daysStr = placeholder.replace("NEXT_FROM_CHECK_IN_DATE_", "").replace("_DAY", "");
+                        try {
+                            int days = Integer.parseInt(daysStr);
+                            resultDate = baseDate.plusDays(days);
+                            break;
+                        } catch (NumberFormatException e) {
+                            throw new RuntimeException("Invalid day number in placeholder: " + placeholder);
+                        }
+                    }
+                    // Handle PLUS_X_DAYS pattern
+                    else if (placeholder.startsWith("PLUS_") && placeholder.endsWith("_DAYS")) {
+                        String daysStr = placeholder.replace("PLUS_", "").replace("_DAYS", "");
+                        try {
+                            int days = Integer.parseInt(daysStr);
+                            resultDate = baseDate.plusDays(days);
+                            break;
+                        } catch (NumberFormatException e) {
+                            throw new RuntimeException("Invalid day number in placeholder: " + placeholder);
+                        }
+                    }
+                    // Handle MINUS_X_DAYS pattern
+                    else if (placeholder.startsWith("MINUS_") && placeholder.endsWith("_DAYS")) {
+                        String daysStr = placeholder.replace("MINUS_", "").replace("_DAYS", "");
+                        try {
+                            int days = Integer.parseInt(daysStr);
+                            resultDate = baseDate.minusDays(days);
+                            break;
+                        } catch (NumberFormatException e) {
+                            throw new RuntimeException("Invalid day number in placeholder: " + placeholder);
+                        }
+                    }
+                    // Handle PLUS_X_WEEKS pattern
+                    else if (placeholder.startsWith("PLUS_") && placeholder.endsWith("_WEEKS")) {
+                        String weeksStr = placeholder.replace("PLUS_", "").replace("_WEEKS", "");
+                        try {
+                            int weeks = Integer.parseInt(weeksStr);
+                            resultDate = baseDate.plusWeeks(weeks);
+                            break;
+                        } catch (NumberFormatException e) {
+                            throw new RuntimeException("Invalid week number in placeholder: " + placeholder);
+                        }
+                    }
+                    // Handle PLUS_X_MONTHS pattern
+                    else if (placeholder.startsWith("PLUS_") && placeholder.endsWith("_MONTHS")) {
+                        String monthsStr = placeholder.replace("PLUS_", "").replace("_MONTHS", "");
+                        try {
+                            int months = Integer.parseInt(monthsStr);
+                            resultDate = baseDate.plusMonths(months);
+                            break;
+                        } catch (NumberFormatException e) {
+                            throw new RuntimeException("Invalid month number in placeholder: " + placeholder);
+                        }
+                    }
+                    else {
+                        throw new RuntimeException("Unsupported date placeholder: " + placeholder + 
+                                ". Supported placeholders: TODAY, TOMORROW, YESTERDAY, NEXT_FRIDAY, NEXT_MONDAY, " +
+                                "NEXT_TUESDAY, NEXT_WEDNESDAY, NEXT_THURSDAY, NEXT_SATURDAY, NEXT_SUNDAY, " +
+                                "NEXT_WEEK, NEXT_MONTH, FIRST_DAY_OF_MONTH, LAST_DAY_OF_MONTH, " +
+                                "FIRST_DAY_OF_NEXT_MONTH, LAST_DAY_OF_NEXT_MONTH, " +
+                                "NEXT_FROM_CHECK_IN_DATE_X_DAY, PLUS_X_DAYS, MINUS_X_DAYS, PLUS_X_WEEKS, PLUS_X_MONTHS");
+                    }
+            }
+
+            String formattedDate = resultDate.format(formatter);
+            logger.debug("Parsed placeholder '{}' to date: {}", dateExpression, formattedDate);
+            return formattedDate;
+
+        } catch (Exception e) {
+            logger.error("Failed to parse date placeholder '{}': {}", dateExpression, e.getMessage());
+            throw new RuntimeException("Failed to parse date placeholder: " + dateExpression, e);
+        }
+    }
+
+    /**
+     * Helper method to get the next occurrence of a specific day of the week.
+     * If today is the same day of the week, it returns next week's occurrence.
+     * 
+     * @param baseDate The base date to calculate from
+     * @param targetDay The target day of the week
+     * @return LocalDate representing the next occurrence of the target day
+     */
+    private static LocalDate getNextDayOfWeek(LocalDate baseDate, DayOfWeek targetDay) {
+        DayOfWeek currentDay = baseDate.getDayOfWeek();
+        int daysUntilTarget = targetDay.getValue() - currentDay.getValue();
+        
+        // If the target day is today or in the past this week, get next week's occurrence
+        if (daysUntilTarget <= 0) {
+            daysUntilTarget += 7;
+        }
+        
+        return baseDate.plusDays(daysUntilTarget);
+    }
 }

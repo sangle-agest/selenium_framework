@@ -1,6 +1,6 @@
 package core.utils;
 
-import core.config.ConfigManager;
+import core.constants.ApplicationConstants;
 import io.qameta.allure.Attachment;
 import io.qameta.allure.Step;
 import org.apache.commons.io.FileUtils;
@@ -20,7 +20,6 @@ import java.util.Properties;
  */
 public class FileUtil {
     private static final Logger logger = LoggerFactory.getLogger(FileUtil.class);
-    private static final ConfigManager config = ConfigManager.getInstance();
 
     /**
      * Read file content as string
@@ -326,7 +325,7 @@ public class FileUtil {
      */
     @Step("Wait for file download with timeout: {fileName}")
     public static boolean waitForDownload(String fileName, long timeoutMs) {
-        String downloadPath = config.getDownloadPath();
+        String downloadPath = ApplicationConstants.TestConfig.DOWNLOAD_PATH;
         String fullPath = Paths.get(downloadPath, fileName).toString();
         
         logger.info("Waiting for download to complete: {} (timeout: {}ms)", fullPath, timeoutMs);
@@ -339,7 +338,7 @@ public class FileUtil {
      */
     @Step("Clean up downloads directory")
     public static void cleanupDownloads() {
-        String downloadPath = config.getDownloadPath();
+        String downloadPath = ApplicationConstants.TestConfig.DOWNLOAD_PATH;
         logger.info("Cleaning up downloads directory: {}", downloadPath);
         
         try {

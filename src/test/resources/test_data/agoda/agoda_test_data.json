@@ -4,8 +4,8 @@
       "testName": "TC01: Search and Sort Hotel Successfully",
       "description": "Search for hotels in Da Nang and sort by price (lowest first)",
       "destination": "Da Nang",
-      "checkInDate": "2025-10-01",
-      "checkOutDate": "2025-10-05",
+      "checkInDate": "<NEXT_FRIDAY>",
+      "checkOutDate": "<PLUS_3_DAYS>",
       "occupancy": {
         "rooms": 2,
         "adults": 3,
@@ -21,8 +21,8 @@
       "testName": "TC02: Search and Filter Hotel Successfully",
       "description": "Search for hotels and apply filters",
       "destination": "Bangkok",
-      "checkInDate": "2025-11-15",
-      "checkOutDate": "2025-11-18",
+      "checkInDate": "<PLUS_2_WEEKS>",
+      "checkOutDate": "<PLUS_3_DAYS>",
       "occupancy": {
         "rooms": 1,
         "adults": 2,
@@ -44,13 +44,13 @@
       "destinations": [
         {
           "name": "Ho Chi Minh City",
-          "checkInDate": "2025-12-01",
-          "checkOutDate": "2025-12-03"
+          "checkInDate": "<PLUS_1_MONTHS>",
+          "checkOutDate": "<PLUS_2_DAYS>"
         },
         {
           "name": "Hanoi",
-          "checkInDate": "2025-12-05",
-          "checkOutDate": "2025-12-07"
+          "checkInDate": "<PLUS_1_MONTHS>",
+          "checkOutDate": "<PLUS_2_DAYS>"
         }
       ],
       "occupancy": {

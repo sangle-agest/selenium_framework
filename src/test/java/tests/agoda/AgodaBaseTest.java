@@ -1,6 +1,6 @@
 package tests.agoda;
 
-import core.config.ConfigManager;
+import core.constants.ApplicationConstants;
 import core.driver.BrowserManager;
 import core.reporting.ScreenshotHandler;
 import core.utils.LogUtils;
@@ -17,8 +17,6 @@ import org.testng.annotations.*;
 public class AgodaBaseTest {
     
     protected final Logger logger = LoggerFactory.getLogger(this.getClass());
-    protected final ConfigManager config = ConfigManager.getInstance();
-    protected static final String AGODA_BASE_URL = "https://www.agoda.com/";
     
     @BeforeSuite(alwaysRun = true)
     @Step("Setting up Agoda test suite")
@@ -31,9 +29,9 @@ public class AgodaBaseTest {
         LogUtils.logEnvironmentInfo("OS", System.getProperty("os.name"));
         LogUtils.logEnvironmentInfo("OS Version", System.getProperty("os.version"));
         LogUtils.logEnvironmentInfo("User", System.getProperty("user.name"));
-        LogUtils.logEnvironmentInfo("Browser", config.getBrowser());
-        LogUtils.logEnvironmentInfo("Headless", String.valueOf(config.isHeadless()));
-        LogUtils.logEnvironmentInfo("Base URL", config.getBaseUrl());
+        LogUtils.logEnvironmentInfo("Browser", ApplicationConstants.Browser.BROWSER_TYPE);
+        LogUtils.logEnvironmentInfo("Headless", String.valueOf(ApplicationConstants.Browser.IS_HEADLESS));
+        LogUtils.logEnvironmentInfo("Base URL", ApplicationConstants.URLs.BASE_URL);
         
         // Initialize screenshot handler
         ScreenshotHandler.cleanupOldScreenshots(7);
@@ -117,8 +115,8 @@ public class AgodaBaseTest {
      */
     @Step("Navigating to Agoda homepage")
     protected void navigateToAgoda() {
-        LogUtils.logPageAction("Navigating to Agoda: " + AGODA_BASE_URL);
-        com.codeborne.selenide.Selenide.open(AGODA_BASE_URL);
+        LogUtils.logPageAction("Navigating to Agoda: " + ApplicationConstants.URLs.AGODA_URL);
+        com.codeborne.selenide.Selenide.open(ApplicationConstants.URLs.AGODA_URL);
         waitForAgodaPageLoad();
     }
     
@@ -141,6 +139,6 @@ public class AgodaBaseTest {
      * Get the Agoda base URL
      */
     protected String getAgodaBaseUrl() {
-        return AGODA_BASE_URL;
+        return ApplicationConstants.URLs.AGODA_URL;
     }
 }

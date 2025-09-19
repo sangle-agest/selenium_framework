@@ -2,9 +2,11 @@ package pages.agoda;
 
 import com.codeborne.selenide.SelenideElement;
 import com.codeborne.selenide.WebDriverRunner;
+import core.constants.ApplicationConstants;
 import core.elements.Button;
 import core.elements.TextBox;
 import core.utils.LogUtils;
+import core.utils.PageWaitUtils;
 import core.utils.WaitUtils;
 import io.qameta.allure.Step;
 import org.openqa.selenium.By;
@@ -22,9 +24,6 @@ import static com.codeborne.selenide.Selenide.*;
  */
 public class AgodaHomePage {
     private static final Logger logger = LoggerFactory.getLogger(AgodaHomePage.class);
-    
-    // URL
-    private static final String AGODA_URL = "https://www.agoda.com/";
     
     // Page Elements - Updated with captured XPaths from actual Agoda site
     private final TextBox destinationInput = new TextBox($(By.xpath("//div[@data-selenium='icon-box-child']//input[@id='textInput']")), "Destination Input");
@@ -68,8 +67,8 @@ public class AgodaHomePage {
      */
     @Step("Navigate to Agoda homepage")
     public void navigateToHomepage() {
-        LogUtils.logTestStep("Navigate to Agoda homepage: " + AGODA_URL);
-        open(AGODA_URL);
+        LogUtils.logTestStep("Navigate to Agoda homepage: " + ApplicationConstants.URLs.AGODA_URL);
+        open(ApplicationConstants.URLs.AGODA_URL);
         WaitUtils.waitForPageLoad();
         LogUtils.logTestStep("Agoda homepage loaded successfully");
     }
@@ -85,12 +84,8 @@ public class AgodaHomePage {
         destinationInput.clear();
         destinationInput.type(destination);
         
-        // Wait for autocomplete results to appear
-        WaitUtils.waitForVisible(firstAutocompleteOption, Duration.ofSeconds(10));
-        
-        // Click first option
-        firstAutocompleteOption.click();
-        LogUtils.logTestStep("Selected first autocomplete option for: " + destination);
+        // Use common autocomplete selection method
+        PageWaitUtils.waitForAutocompleteAndSelect(firstAutocompleteOption, destination);
     }
 
     /**
@@ -103,16 +98,16 @@ public class AgodaHomePage {
         try {
             // Wait for calendar tabs to be visible with shorter timeout
             WaitUtils.waitForVisible(calendarTab, Duration.ofSeconds(3));
-            LogUtils.logTestStep("✓ Calendar tab is displayed and interactable");
+            LogUtils.logVerificationStep("✓ Calendar tab is displayed and interactable");
         } catch (Exception e) {
-            LogUtils.logTestStep("⚠ Calendar tab not found - continuing without verification: " + e.getMessage());
+            LogUtils.logVerificationStep("⚠ Calendar tab not found - continuing without verification: " + e.getMessage());
         }
         
         try {
             WaitUtils.waitForVisible(flexibleTab, Duration.ofSeconds(3));
-            LogUtils.logTestStep("✓ I'm flexible tab is displayed and interactable");
+            LogUtils.logVerificationStep("✓ I'm flexible tab is displayed and interactable");
         } catch (Exception e) {
-            LogUtils.logTestStep("⚠ I'm flexible tab not found - continuing without verification: " + e.getMessage());
+            LogUtils.logVerificationStep("⚠ I'm flexible tab not found - continuing without verification: " + e.getMessage());
         }
     }
 
@@ -143,35 +138,23 @@ public class AgodaHomePage {
         LogUtils.logTestStep("Checking if DatePicker popup is already visible after autocomplete selection");
         
         if (isDatePickerVisible()) {
-            LogUtils.logTestStep("✓ DatePicker popup is already visible, proceeding with date selection");
+            LogUtils.logVerificationStep("✓ DatePicker popup is already visible, proceeding with date selection");
         } else {
             LogUtils.logTestStep("DatePicker popup not visible, clicking check-in button to open calendar");
             checkInButton.click();
-            WaitUtils.sleep(2000); // Wait for calendar to open
             
-            // Wait for DatePicker popup to become visible
-            LogUtils.logTestStep("Waiting for DatePicker popup to become accessible...");
-            for (int i = 0; i < 10; i++) {
-                if (isDatePickerVisible()) {
-                    LogUtils.logTestStep("✓ DatePicker popup is now visible");
-                    break;
-                }
-                WaitUtils.sleep(1000);
-                LogUtils.logTestStep("Still waiting for DatePicker popup... attempt " + (i + 1));
-            }
+            // Wait for DatePicker popup to become visible using common method
+            boolean isPopupVisible = PageWaitUtils.waitForPopupVisible(this::isDatePickerVisible, "DatePicker");
             
-            if (!isDatePickerVisible()) {
-                LogUtils.logTestStep("ERROR: DatePicker popup did not become visible after waiting");
+            if (!isPopupVisible) {
                 return;
             }
         }
         
         LogUtils.logTestStep("Selecting check-in date: " + checkInDate);
-        WaitUtils.sleep(2000); // Reduced wait time
         selectDate(checkInDate);
         
         LogUtils.logTestStep("Selecting check-out date: " + checkOutDate);
-        WaitUtils.sleep(2000); // Reduced wait time
         selectDate(checkOutDate);
     }
 
@@ -189,28 +172,15 @@ public class AgodaHomePage {
                 return;
             }
             
-            // Use direct JavaScript approach without Selenium element validation
-            LogUtils.logTestStep("DEBUG: Using direct JavaScript XPath evaluation to click date...");
-            String jsScript = "document.evaluate(\"//div[@id='DatePicker__AccessibleV2']//span[@data-selenium-date='" + dateString + "']\", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue?.click();";
-            executeJavaScript(jsScript);
+            // Use common date selection method
+            boolean dateSelected = PageWaitUtils.waitForDateSelection(dateString, "//div[@id='DatePicker__AccessibleV2']");
             
-            // Add a small wait to see if the click was successful
-            WaitUtils.sleep(1000);
-            
-            // First, let's check what's actually in the DatePicker popup
-            LogUtils.logTestStep("DEBUG: Checking what dates are available in the DatePicker popup...");
-            String availableDatesScript = "var dates = document.evaluate(\"//div[@id='DatePicker__AccessibleV2']//span[@data-selenium-date]\", document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null); var result = []; for(var i = 0; i < Math.min(10, dates.snapshotLength); i++) { result.push(dates.snapshotItem(i).getAttribute('data-selenium-date')); } return result.join(', ');";
-            String availableDates = (String) executeJavaScript(availableDatesScript);
-            LogUtils.logTestStep("DEBUG: Available dates in popup: " + availableDates);
-            
-            // Verify if the date was selected by checking if it exists
-            String verificationScript = "return document.evaluate(\"//div[@id='DatePicker__AccessibleV2']//span[@data-selenium-date='" + dateString + "']\", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue !== null;";
-            Boolean elementExists = (Boolean) executeJavaScript(verificationScript);
-            
-            if (elementExists != null && elementExists) {
-                LogUtils.logTestStep("✓ Successfully clicked date using JavaScript XPath: " + dateString);
-            } else {
-                LogUtils.logTestStep("⚠ Date element not found for: " + dateString);
+            if (!dateSelected) {
+                // Debug: Check available dates
+                LogUtils.logTestStep("DEBUG: Checking what dates are available in the DatePicker popup...");
+                String availableDatesScript = "var dates = document.evaluate(\"//div[@id='DatePicker__AccessibleV2']//span[@data-selenium-date]\", document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null); var result = []; for(var i = 0; i < Math.min(10, dates.snapshotLength); i++) { result.push(dates.snapshotItem(i).getAttribute('data-selenium-date')); } return result.join(', ');";
+                String availableDates = (String) executeJavaScript(availableDatesScript);
+                LogUtils.logTestStep("DEBUG: Available dates in popup: " + availableDates);
                 
                 // Try to find a similar date if exact date not available
                 LogUtils.logTestStep("DEBUG: Attempting to find alternative dates close to: " + dateString);
@@ -249,17 +219,8 @@ public class AgodaHomePage {
         int currentRooms = Integer.parseInt(roomValue.getText().trim());
         LogUtils.logTestStep("Current rooms: " + currentRooms + ", Target rooms: " + targetRooms);
         
-        while (currentRooms < targetRooms) {
-            addRoom.click();
-            currentRooms++;
-            sleep(1000); // Simple wait instead of waitForElementUpdate
-        }
-        
-        while (currentRooms > targetRooms) {
-            minusRoom.click();
-            currentRooms--;
-            sleep(1000); // Simple wait instead of waitForElementUpdate
-        }
+        // Use common counter update method
+        PageWaitUtils.updateCounterSmart(roomValue, currentRooms, targetRooms, addRoom, minusRoom, "Room");
     }
 
     /**
@@ -269,17 +230,8 @@ public class AgodaHomePage {
         int currentAdults = Integer.parseInt(adultValue.getText().trim());
         LogUtils.logTestStep("Current adults: " + currentAdults + ", Target adults: " + targetAdults);
         
-        while (currentAdults < targetAdults) {
-            addAdult.click();
-            currentAdults++;
-            sleep(1000); // Simple wait instead of waitForElementUpdate
-        }
-        
-        while (currentAdults > targetAdults) {
-            minusAdult.click();
-            currentAdults--;
-            sleep(1000); // Simple wait instead of waitForElementUpdate
-        }
+        // Use common counter update method
+        PageWaitUtils.updateCounterSmart(adultValue, currentAdults, targetAdults, addAdult, minusAdult, "Adult");
     }
 
     /**
@@ -289,17 +241,8 @@ public class AgodaHomePage {
         int currentChildren = Integer.parseInt(childValue.getText().trim());
         LogUtils.logTestStep("Current children: " + currentChildren + ", Target children: " + targetChildren);
         
-        while (currentChildren < targetChildren) {
-            addChild.click();
-            currentChildren++;
-            sleep(1000); // Simple wait instead of waitForElementUpdate
-        }
-        
-        while (currentChildren > targetChildren) {
-            minusChild.click();
-            currentChildren--;
-            sleep(1000); // Simple wait instead of waitForElementUpdate
-        }
+        // Use common counter update method
+        PageWaitUtils.updateCounterSmart(childValue, currentChildren, targetChildren, addChild, minusChild, "Children");
     }
 
     /**
@@ -329,7 +272,7 @@ public class AgodaHomePage {
     public void searchDestination(String destination) {
         LogUtils.logTestStep("Step 1: Searching for destination - " + destination);
         enterDestination(destination);
-        LogUtils.logTestStep("✓ Destination search completed");
+        LogUtils.logVerificationStep("✓ Destination search completed");
     }
     
     /**
@@ -338,9 +281,18 @@ public class AgodaHomePage {
     @Step("Select travel dates: {checkInDate} to {checkOutDate}")
     public void selectTravelDates(String checkInDate, String checkOutDate) {
         LogUtils.logTestStep("Step 2: Selecting travel dates - Check-in: " + checkInDate + ", Check-out: " + checkOutDate);
-        WaitUtils.sleep(3000); // Reduced wait time
+        
+        // Wait for the page to be ready for date selection by checking if check-in button is clickable
+        WaitUtils.waitForCondition(() -> {
+            try {
+                return checkInButton.exists() && checkInButton.isDisplayed();
+            } catch (Exception e) {
+                return false;
+            }
+        }, 10);
+        
         selectDates(checkInDate, checkOutDate);
-        LogUtils.logTestStep("✓ Travel dates selection completed");
+        LogUtils.logVerificationStep("✓ Travel dates selection completed");
     }
     
     /**
@@ -350,7 +302,7 @@ public class AgodaHomePage {
     public AgodaSearchResultsPage setOccupancyAndSearch(int rooms, int adults, int children) {
         LogUtils.logTestStep("Step 3: Setting occupancy - Rooms: " + rooms + ", Adults: " + adults + ", Children: " + children);
         setOccupancy(rooms, adults, children);
-        LogUtils.logTestStep("✓ Occupancy set, clicking search button");
+        LogUtils.logVerificationStep("✓ Occupancy set, clicking search button");
         return clickSearchButton();
     }
 
@@ -371,7 +323,7 @@ public class AgodaHomePage {
         // Step 3: Set occupancy and search
         AgodaSearchResultsPage resultsPage = setOccupancyAndSearch(rooms, adults, children);
         
-        LogUtils.logTestStep("✓ Complete hotel search process finished");
+        LogUtils.logVerificationStep("✓ Complete hotel search process finished");
         return resultsPage;
     }
 
@@ -398,10 +350,10 @@ public class AgodaHomePage {
             boolean isDisplayed = destinationInput.isVisible() && 
                                 searchButton.isVisible();
             
-            LogUtils.logTestStep("Homepage verification: " + (isDisplayed ? "PASSED" : "FAILED"));
+            LogUtils.logVerificationStep("Homepage verification: " + (isDisplayed ? "PASSED" : "FAILED"));
             return isDisplayed;
         } catch (Exception e) {
-            LogUtils.logTestStep("Homepage verification failed: " + e.getMessage());
+            LogUtils.logVerificationStep("Homepage verification failed: " + e.getMessage());
             return false;
         }
     }

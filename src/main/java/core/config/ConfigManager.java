@@ -189,6 +189,7 @@ public class ConfigManager {
 
     // Application Configuration
     public String getBaseUrl() { return getProperty("base.url", "https://example.com"); }
+    public String getAgodaUrl() { return getProperty("agoda.url", "https://www.agoda.com/"); }
 
     // Screenshot Configuration
     public boolean isScreenshotOnFailure() { return getBooleanProperty("screenshot.on.failure", true); }

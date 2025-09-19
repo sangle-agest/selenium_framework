@@ -4,7 +4,7 @@ import com.codeborne.selenide.Configuration;
 import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.WebDriverRunner;
 import com.codeborne.selenide.logevents.SelenideLogger;
-import core.config.ConfigManager;
+import core.constants.ApplicationConstants;
 import io.qameta.allure.selenide.AllureSelenide;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,7 +16,6 @@ import java.io.File;
  */
 public class BrowserManager {
     private static final Logger logger = LoggerFactory.getLogger(BrowserManager.class);
-    private static final ConfigManager config = ConfigManager.getInstance();
     private static boolean isConfigured = false;
 
     /**
@@ -31,29 +30,29 @@ public class BrowserManager {
         logger.info("Configuring Selenide settings");
 
         // Basic browser configuration
-        Configuration.browser = config.getBrowser();
-        Configuration.headless = config.isHeadless();
-        Configuration.browserSize = config.shouldMaximizeBrowser() ? "1920x1080" : "1366x768";
+        Configuration.browser = ApplicationConstants.Browser.BROWSER_TYPE;
+        Configuration.headless = ApplicationConstants.Browser.IS_HEADLESS;
+        Configuration.browserSize = ApplicationConstants.Browser.SHOULD_MAXIMIZE ? "1920x1080" : "1366x768";
 
         // Timeout configuration
-        Configuration.timeout = config.getTimeout();
-        Configuration.pageLoadTimeout = config.getPageLoadTimeout();
+        Configuration.timeout = ApplicationConstants.Timeouts.DEFAULT_TIMEOUT;
+        Configuration.pageLoadTimeout = ApplicationConstants.Timeouts.PAGE_LOAD_TIMEOUT;
 
         // Remote execution configuration
-        if (config.isRemoteExecution()) {
-            Configuration.remote = config.getRemoteUrl();
-            logger.info("Configured for remote execution at: {}", config.getRemoteUrl());
+        if (ApplicationConstants.Remote.IS_REMOTE_EXECUTION) {
+            Configuration.remote = ApplicationConstants.Remote.REMOTE_URL;
+            logger.info("Configured for remote execution at: {}", ApplicationConstants.Remote.REMOTE_URL);
         }
 
         // Screenshot configuration
-        Configuration.screenshots = config.isScreenshotOnFailure();
-        Configuration.savePageSource = config.isScreenshotOnFailure();
+        Configuration.screenshots = ApplicationConstants.TestConfig.SCREENSHOT_ON_FAILURE;
+        Configuration.savePageSource = ApplicationConstants.TestConfig.SCREENSHOT_ON_FAILURE;
         
         // Reports directory
         Configuration.reportsFolder = "target/screenshots";
         
         // Downloads directory
-        String downloadPath = config.getDownloadPath();
+        String downloadPath = ApplicationConstants.TestConfig.DOWNLOAD_PATH;
         File downloadDir = new File(downloadPath);
         if (!downloadDir.exists()) {
             downloadDir.mkdirs();
@@ -78,7 +77,7 @@ public class BrowserManager {
         logger.info("Selenide configured successfully - Browser: {}, Headless: {}, Remote: {}, Timeout: {}ms",
                    Configuration.browser,
                    Configuration.headless,
-                   config.isRemoteExecution(),
+                   ApplicationConstants.Remote.IS_REMOTE_EXECUTION,
                    Configuration.timeout);
     }
 
@@ -88,7 +87,7 @@ public class BrowserManager {
     public static void openBrowser() {
         configure();
         
-        String baseUrl = config.getBaseUrl();
+        String baseUrl = ApplicationConstants.URLs.BASE_URL;
         logger.info("Opening browser and navigating to: {}", baseUrl);
         
         try {

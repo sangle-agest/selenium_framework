@@ -60,6 +60,15 @@ public class LogUtils {
     }
 
     /**
+     * Log verification step with INFO level
+     * @param message Verification message
+     */
+    @Step("Verification Step: {message}")
+    public static void logVerificationStep(String message) {
+        logger.info("VERIFICATION STEP: {}", message);
+    }
+
+    /**
      * Log test data
      * @param dataName Data name
      * @param dataValue Data value

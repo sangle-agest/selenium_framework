@@ -45,7 +45,7 @@ public class AgodaSearchResultsPage {
         try {
             LogUtils.logTestStep("Waiting for sort container to be visible...");
             WaitUtils.waitForVisible(sortContainer, Duration.ofSeconds(15));
-            LogUtils.logTestStep("✓ Sort container is visible");
+            LogUtils.logVerificationStep("✓ Sort container is visible");
         } catch (Exception e) {
             LogUtils.logTestStep("⚠ Sort container not found, continuing with basic wait: " + e.getMessage());
             WaitUtils.sleep(5000); // Fallback wait
@@ -59,13 +59,13 @@ public class AgodaSearchResultsPage {
                 // Wait for loading indicator to disappear
                 for (int i = 0; i < 20; i++) {
                     if (!loadingIndicator.isDisplayed()) {
-                        LogUtils.logTestStep("✓ Loading indicator disappeared");
+                        LogUtils.logVerificationStep("✓ Loading indicator disappeared");
                         break;
                     }
                     WaitUtils.sleep(1000);
                 }
             } else {
-                LogUtils.logTestStep("✓ No loading indicators found");
+                LogUtils.logVerificationStep("✓ No loading indicators found");
             }
         } catch (Exception e) {
             LogUtils.logTestStep("⚠ Issue with loading indicator check: " + e.getMessage());
@@ -76,7 +76,7 @@ public class AgodaSearchResultsPage {
             LogUtils.logTestStep("Waiting for search results to be available...");
             for (int i = 0; i < 10; i++) {
                 if (searchResults.size() > 0) {
-                    LogUtils.logTestStep("✓ Search results are available (" + searchResults.size() + " results found)");
+                    LogUtils.logVerificationStep("✓ Search results are available (" + searchResults.size() + " results found)");
                     break;
                 }
                 WaitUtils.sleep(2000);
@@ -88,7 +88,7 @@ public class AgodaSearchResultsPage {
         
         // Final wait to ensure everything is stable
         WaitUtils.sleep(2000);
-        LogUtils.logTestStep("✓ Page loading wait completed");
+        LogUtils.logVerificationStep("✓ Page loading wait completed");
     }
     
     /**
@@ -182,7 +182,7 @@ public class AgodaSearchResultsPage {
                     LogUtils.logTestStep("Sort element is visible, clicking normally...");
                     sortElement.click();
                 }
-                LogUtils.logTestStep("✓ Applied sort: " + sortOption);
+                LogUtils.logVerificationStep("✓ Applied sort: " + sortOption);
             } else {
                 LogUtils.logTestStep("⚠ No sort options found, skipping sort step");
                 return;
@@ -194,7 +194,7 @@ public class AgodaSearchResultsPage {
         
         // Wait for results to update after sorting
         WaitUtils.sleep(3000);
-        LogUtils.logTestStep("✓ Sort operation completed");
+        LogUtils.logVerificationStep("✓ Sort operation completed");
     }
     
     /**

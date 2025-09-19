@@ -179,4 +179,99 @@ public class WaitUtils {
             throw new RuntimeException("Page did not load within timeout", e);
         }
     }
+
+    /**
+     * Wait for element text/value to change to expected value
+     * @param element Element to monitor
+     * @param expectedValue Expected value
+     * @param timeoutSeconds Timeout in seconds
+     * @return True if value changed as expected
+     */
+    @Step("Wait for element value to change to: {expectedValue}")
+    public static boolean waitForElementValueChange(SelenideElement element, String expectedValue, int timeoutSeconds) {
+        logger.debug("Waiting for element value to change to: {}", expectedValue);
+        return waitForCondition(() -> {
+            try {
+                String currentValue = element.getText().trim();
+                return expectedValue.equals(currentValue);
+            } catch (Exception e) {
+                logger.debug("Exception while checking element value: {}", e.getMessage());
+                return false;
+            }
+        }, timeoutSeconds);
+    }
+
+    /**
+     * Wait for numeric counter element to reach expected value
+     * @param element Counter element to monitor
+     * @param expectedValue Expected numeric value
+     * @param timeoutSeconds Timeout in seconds
+     * @return True if counter reached expected value
+     */
+    @Step("Wait for counter to reach value: {expectedValue}")
+    public static boolean waitForCounterValue(SelenideElement element, int expectedValue, int timeoutSeconds) {
+        logger.debug("Waiting for counter to reach value: {}", expectedValue);
+        return waitForCondition(() -> {
+            try {
+                int currentValue = Integer.parseInt(element.getText().trim());
+                return currentValue == expectedValue;
+            } catch (Exception e) {
+                logger.debug("Exception while checking counter value: {}", e.getMessage());
+                return false;
+            }
+        }, timeoutSeconds);
+    }
+
+    /**
+     * Wait for element to become interactable (visible and enabled)
+     * @param element Element to wait for
+     * @param timeoutSeconds Timeout in seconds
+     * @return True if element became interactable
+     */
+    @Step("Wait for element to become interactable")
+    public static boolean waitForElementInteractable(SelenideElement element, int timeoutSeconds) {
+        logger.debug("Waiting for element to become interactable");
+        return waitForCondition(() -> {
+            try {
+                return element.exists() && element.isDisplayed() && element.isEnabled();
+            } catch (Exception e) {
+                logger.debug("Exception while checking element interactability: {}", e.getMessage());
+                return false;
+            }
+        }, timeoutSeconds);
+    }
+
+    /**
+     * Wait for JavaScript condition to be true using custom script
+     * @param jsCondition JavaScript condition that returns boolean
+     * @param timeoutSeconds Timeout in seconds
+     * @param description Description for logging
+     * @return True if condition was met
+     */
+    @Step("Wait for JavaScript condition: {description}")
+    public static boolean waitForJavaScriptCondition(String jsCondition, int timeoutSeconds, String description) {
+        logger.debug("Waiting for JavaScript condition: {}", description);
+        return waitForCondition(() -> {
+            try {
+                Object result = BrowserUtils.executeJavaScript(jsCondition);
+                return Boolean.TRUE.equals(result);
+            } catch (Exception e) {
+                logger.debug("Exception while executing JavaScript condition: {}", e.getMessage());
+                return false;
+            }
+        }, timeoutSeconds);
+    }
+
+    /**
+     * Wait for DOM element to exist using XPath
+     * @param xpath XPath expression
+     * @param timeoutSeconds Timeout in seconds
+     * @return True if element exists
+     */
+    @Step("Wait for DOM element to exist: {xpath}")
+    public static boolean waitForDOMElement(String xpath, int timeoutSeconds) {
+        logger.debug("Waiting for DOM element to exist: {}", xpath);
+        String jsScript = "return document.evaluate(\"" + xpath + "\", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue !== null;";
+        return waitForJavaScriptCondition(jsScript, timeoutSeconds, "DOM element existence: " + xpath);
+    }
 }

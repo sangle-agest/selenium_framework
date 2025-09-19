@@ -95,7 +95,7 @@ public class TC01_SearchAndSortHotelTest extends AgodaBaseTest {
             "Agoda homepage is not displayed! Please check if navigation was successful " +
             "and all required page elements are loaded.");
         
-        LogUtils.logTestStep("✓ Agoda homepage loaded successfully");
+        LogUtils.logVerificationStep("✓ Agoda homepage loaded successfully");
     }
     
     /**
@@ -111,7 +111,7 @@ public class TC01_SearchAndSortHotelTest extends AgodaBaseTest {
             "No search results found! Expected search results > 0 but found: " + resultCount + 
             ". Please check if destination, dates, or search criteria are valid.");
         
-        LogUtils.logTestStep("✓ Search results verified: " + resultCount + " results found");
+        LogUtils.logVerificationStep("✓ Search results verified: " + resultCount + " results found");
     }
     
     /**
@@ -127,7 +127,7 @@ public class TC01_SearchAndSortHotelTest extends AgodaBaseTest {
             ". Checked " + sortingResult.getCheckedResults() + " results. Details: " + 
             sortingResult.getDetails());
         
-        LogUtils.logTestStep("✓ Price sorting verification completed successfully for " + 
+        LogUtils.logVerificationStep("✓ Price sorting verification completed successfully for " + 
                            sortingResult.getCheckedResults() + " results");
     }
 }

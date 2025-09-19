@@ -3,6 +3,7 @@ package core.data.providers;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import core.data.models.AgodaTestData;
+import core.utils.DateTimeUtils;
 import core.utils.LogUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,9 +60,59 @@ public class AgodaTestDataProvider {
         }
         
         AgodaTestData data = gson.fromJson(testCaseData, AgodaTestData.class);
+        
+        // Process dynamic date placeholders
+        data = processDatePlaceholders(data);
+        
         logger.info("Retrieved test data for: {}", testCaseId);
         
         return data;
+    }
+
+    /**
+     * Process dynamic date placeholders in test data
+     * @param testData The test data containing potential date placeholders
+     * @return AgodaTestData with resolved date placeholders
+     */
+    private static AgodaTestData processDatePlaceholders(AgodaTestData testData) {
+        try {
+            // Process check-in date
+            if (testData.getCheckInDate() != null) {
+                String originalCheckIn = testData.getCheckInDate();
+                String processedCheckIn = DateTimeUtils.parseDatePlaceholder(originalCheckIn);
+                testData.setCheckInDate(processedCheckIn);
+                
+                if (!originalCheckIn.equals(processedCheckIn)) {
+                    logger.debug("Processed check-in date placeholder '{}' -> '{}'", originalCheckIn, processedCheckIn);
+                }
+                
+                // Process check-out date with check-in date as reference
+                if (testData.getCheckOutDate() != null) {
+                    String originalCheckOut = testData.getCheckOutDate();
+                    String processedCheckOut = DateTimeUtils.parseDatePlaceholder(originalCheckOut, processedCheckIn);
+                    testData.setCheckOutDate(processedCheckOut);
+                    
+                    if (!originalCheckOut.equals(processedCheckOut)) {
+                        logger.debug("Processed check-out date placeholder '{}' -> '{}'", originalCheckOut, processedCheckOut);
+                    }
+                }
+            } else if (testData.getCheckOutDate() != null) {
+                // Process check-out date without reference if no check-in date
+                String originalCheckOut = testData.getCheckOutDate();
+                String processedCheckOut = DateTimeUtils.parseDatePlaceholder(originalCheckOut);
+                testData.setCheckOutDate(processedCheckOut);
+                
+                if (!originalCheckOut.equals(processedCheckOut)) {
+                    logger.debug("Processed check-out date placeholder '{}' -> '{}'", originalCheckOut, processedCheckOut);
+                }
+            }
+            
+        } catch (Exception e) {
+            logger.error("Failed to process date placeholders in test data: {}", e.getMessage());
+            throw new RuntimeException("Failed to process date placeholders", e);
+        }
+        
+        return testData;
     }
 
     /**
