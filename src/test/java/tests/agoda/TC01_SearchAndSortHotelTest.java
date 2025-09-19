@@ -1,5 +1,7 @@
 package tests.agoda;
 
+import core.data.models.AgodaTestData;
+import core.data.providers.AgodaTestDataProvider;
 import core.utils.LogUtils;
 import io.qameta.allure.*;
 import org.testng.Assert;
@@ -8,48 +10,48 @@ import pages.agoda.AgodaHomePage;
 import pages.agoda.AgodaSearchResultsPage;
 
 /**
- * TC 01: Updated Search and Sort Hotel Test with correct XPaths
+ * TC 01: Search and Sort Hotel Test with JSON test data
  * 
  * Test Steps:
  * 1. Navigate to agoda.com (handled by AgodaBaseTest)
- * 2. Input destination: Da Nang (using autocomplete)
- * 3. Input dates: Dynamic date selection  
- * 4. Input travelers: 2 rooms, 3 adults, 0 children
- * 5. Click Search (handles tab switching)
- * 6. Verify search results > 0
- * 7. Sort by: Lowest price first
- * 8. Verify: Top 5 results are sorted by price ascending
+ * 2. Load test data from JSON file using DataProvider
+ * 3. Input destination: Da Nang (using autocomplete)
+ * 4. Input dates: Dynamic date selection  
+ * 5. Input travelers: 2 rooms, 3 adults, 0 children
+ * 6. Click Search (handles tab switching)
+ * 7. Verify search results > 0
+ * 8. Sort by: Lowest price first
+ * 9. Verify: Top 5 results are sorted by price ascending
  */
 @Epic("Agoda Hotel Booking")
 @Feature("Hotel Search and Sort") 
-@Story("TC01 - Updated Search and Sort Hotel Successfully")
+@Story("TC01 - Search and Sort Hotel Successfully")
 public class TC01_SearchAndSortHotelTest extends AgodaBaseTest {
 
     @Test(description = "Search for hotels in Da Nang and sort by price (lowest first)")
     @Severity(SeverityLevel.CRITICAL)
     @Description("Verify that user can search for hotels in Da Nang with specific dates and travelers, then sort results by lowest price first")
     public void testSearchAndSortHotel() {
-        // Test Data
-        String destination = "Da Nang";
-        String sortOption = "Lowest price first";
+        // Load test data from JSON file
+        AgodaTestData testData = AgodaTestDataProvider.getTestData("TC01_SearchAndSortHotel");
         
-        // Dates - using simple date format (changed to October for better availability)
-        String checkInDate = "2025-10-01";
-        String checkOutDate = "2025-10-05";
+        // Validate required test data
+        Assert.assertTrue(AgodaTestDataProvider.validateTestData(testData, "destination", "checkInDate", "checkOutDate", "occupancy"),
+            "Test data validation failed");
         
-        // Occupancy
-        int rooms = 2;
-        int adults = 3;
-        int children = 0;
+        // Log test data information automatically
+        AgodaTestDataProvider.logTestDataInfo(testData);
         
-        LogUtils.logTestStep("Starting TC01: Updated Search and Sort Hotel Successfully");
-        LogUtils.logTestData("Destination", destination);
-        LogUtils.logTestData("Check-in Date", checkInDate);
-        LogUtils.logTestData("Check-out Date", checkOutDate);
-        LogUtils.logTestData("Rooms", String.valueOf(rooms));
-        LogUtils.logTestData("Adults", String.valueOf(adults));
-        LogUtils.logTestData("Children", String.valueOf(children));
-        LogUtils.logTestData("Sort Option", sortOption);
+        // Extract test data for easier access
+        String destination = testData.getDestination();
+        String checkInDate = testData.getCheckInDate();
+        String checkOutDate = testData.getCheckOutDate();
+        int rooms = testData.getOccupancy().getRooms();
+        int adults = testData.getOccupancy().getAdults();
+        int children = testData.getOccupancy().getChildren();
+        String sortOption = testData.getSortOption();
+        
+        LogUtils.logTestStep("Starting TC01: Search and Sort Hotel test with JSON test data");
         
         // Step 1: Initialize homepage (already navigated by AgodaBaseTest)
         AgodaHomePage homePage = new AgodaHomePage();
