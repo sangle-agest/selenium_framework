@@ -5,8 +5,6 @@ import com.google.gson.JsonObject;
 import core.data.models.AgodaTestData;
 import core.utils.DateTimeUtils;
 import core.utils.LogUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -17,7 +15,6 @@ import java.nio.charset.StandardCharsets;
  * DataProvider class for handling Agoda test data from JSON files
  */
 public class AgodaTestDataProvider {
-    private static final Logger logger = LoggerFactory.getLogger(AgodaTestDataProvider.class);
     private static final String AGODA_TEST_DATA_PATH = "/test_data/agoda/agoda_test_data.json";
     private static JsonObject testDataRoot;
     private static final Gson gson = new Gson();
@@ -35,10 +32,10 @@ public class AgodaTestDataProvider {
                 }
                 
                 testDataRoot = gson.fromJson(reader, JsonObject.class);
-                logger.info("Successfully loaded Agoda test data from: {}", AGODA_TEST_DATA_PATH);
+                LogUtils.logInfo("Successfully loaded Agoda test data from: " + AGODA_TEST_DATA_PATH);
                 
             } catch (IOException e) {
-                logger.error("Failed to load test data from: {}", AGODA_TEST_DATA_PATH, e);
+                LogUtils.logError("Failed to load test data from: " + AGODA_TEST_DATA_PATH, e);
                 throw new RuntimeException("Failed to load test data", e);
             }
         }
@@ -64,7 +61,7 @@ public class AgodaTestDataProvider {
         // Process dynamic date placeholders
         data = processDatePlaceholders(data);
         
-        logger.info("Retrieved test data for: {}", testCaseId);
+        LogUtils.logInfo("Retrieved test data for: " + testCaseId);
         
         return data;
     }
@@ -83,7 +80,7 @@ public class AgodaTestDataProvider {
                 testData.setCheckInDate(processedCheckIn);
                 
                 if (!originalCheckIn.equals(processedCheckIn)) {
-                    logger.debug("Processed check-in date placeholder '{}' -> '{}'", originalCheckIn, processedCheckIn);
+                    LogUtils.logDebug("Processed check-in date placeholder '" + originalCheckIn + "' -> '" + processedCheckIn + "'");
                 }
                 
                 // Process check-out date with check-in date as reference
@@ -93,7 +90,7 @@ public class AgodaTestDataProvider {
                     testData.setCheckOutDate(processedCheckOut);
                     
                     if (!originalCheckOut.equals(processedCheckOut)) {
-                        logger.debug("Processed check-out date placeholder '{}' -> '{}'", originalCheckOut, processedCheckOut);
+                        LogUtils.logDebug("Processed check-out date placeholder '" + originalCheckOut + "' -> '" + processedCheckOut + "'");
                     }
                 }
             } else if (testData.getCheckOutDate() != null) {
@@ -103,12 +100,12 @@ public class AgodaTestDataProvider {
                 testData.setCheckOutDate(processedCheckOut);
                 
                 if (!originalCheckOut.equals(processedCheckOut)) {
-                    logger.debug("Processed check-out date placeholder '{}' -> '{}'", originalCheckOut, processedCheckOut);
+                    LogUtils.logDebug("Processed check-out date placeholder '" + originalCheckOut + "' -> '" + processedCheckOut + "'");
                 }
             }
             
         } catch (Exception e) {
-            logger.error("Failed to process date placeholders in test data: {}", e.getMessage());
+            LogUtils.logError("Failed to process date placeholders in test data: " + e.getMessage(), e);
             throw new RuntimeException("Failed to process date placeholders", e);
         }
         
@@ -154,7 +151,7 @@ public class AgodaTestDataProvider {
             );
         }
         
-        logger.info("Test data logged for: {}", testData.getTestName());
+        LogUtils.logInfo("Test data logged for: " + testData.getTestName());
     }
 
     /**
@@ -179,34 +176,34 @@ public class AgodaTestDataProvider {
             switch (field.toLowerCase()) {
                 case "destination":
                     if (testData.getDestination() == null || testData.getDestination().trim().isEmpty()) {
-                        logger.error("Missing required field: destination");
+                        LogUtils.logError("Missing required field: destination", null);
                         return false;
                     }
                     break;
                 case "checkindate":
                     if (testData.getCheckInDate() == null || testData.getCheckInDate().trim().isEmpty()) {
-                        logger.error("Missing required field: checkInDate");
+                        LogUtils.logError("Missing required field: checkInDate", null);
                         return false;
                     }
                     break;
                 case "checkoutdate":
                     if (testData.getCheckOutDate() == null || testData.getCheckOutDate().trim().isEmpty()) {
-                        logger.error("Missing required field: checkOutDate");
+                        LogUtils.logError("Missing required field: checkOutDate", null);
                         return false;
                     }
                     break;
                 case "occupancy":
                     if (testData.getOccupancy() == null) {
-                        logger.error("Missing required field: occupancy");
+                        LogUtils.logError("Missing required field: occupancy", null);
                         return false;
                     }
                     break;
                 default:
-                    logger.warn("Unknown validation field: {}", field);
+                    LogUtils.logWarning("Unknown validation field: " + field);
             }
         }
         
-        logger.info("Test data validation passed for: {}", testData.getTestName());
+        LogUtils.logInfo("Test data validation passed for: " + testData.getTestName());
         return true;
     }
 }

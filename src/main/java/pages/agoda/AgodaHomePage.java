@@ -10,8 +10,6 @@ import core.utils.PageWaitUtils;
 import core.utils.WaitUtils;
 import io.qameta.allure.Step;
 import org.openqa.selenium.By;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 
@@ -23,7 +21,6 @@ import static com.codeborne.selenide.Selenide.*;
  * Updated AgodaHomePage with correct XPaths captured from actual Agoda site
  */
 public class AgodaHomePage {
-    private static final Logger logger = LoggerFactory.getLogger(AgodaHomePage.class);
     
     // Page Elements - Updated with captured XPaths from actual Agoda site
     private final TextBox destinationInput = new TextBox($(By.xpath("//div[@data-selenium='icon-box-child']//input[@id='textInput']")), "Destination Input");
@@ -59,7 +56,7 @@ public class AgodaHomePage {
     private final Button minusChild = new Button($(By.xpath("//div[@data-selenium='occupancyChildren']//button[@data-selenium='minus']")), "Minus Child Button");
 
     public AgodaHomePage() {
-        logger.info("Initialized AgodaHomePageUpdated");
+        LogUtils.logTestStep("Initialized AgodaHomePageUpdated");
     }
 
     /**
@@ -325,21 +322,6 @@ public class AgodaHomePage {
         
         LogUtils.logVerificationStep("✓ Complete hotel search process finished");
         return resultsPage;
-    }
-
-    /**
-     * Complete hotel search with all parameters (legacy version for backward compatibility)
-     */
-    @Step("Search hotels with destination: {destination}")
-    public AgodaSearchResultsPage searchHotels(String destination, String startYear, String startMonth, String startDay,
-                                               String endYear, String endMonth, String endDay,
-                                               int rooms, int adults, int children) {
-        // Convert separate date parts to simple date format
-        String checkInDate = startYear + "-" + String.format("%02d", Integer.parseInt(startMonth)) + "-" + String.format("%02d", Integer.parseInt(startDay));
-        String checkOutDate = endYear + "-" + String.format("%02d", Integer.parseInt(endMonth)) + "-" + String.format("%02d", Integer.parseInt(endDay));
-        
-        // Use the simplified version
-        return searchHotels(destination, checkInDate, checkOutDate, rooms, adults, children);
     }
 
     /**

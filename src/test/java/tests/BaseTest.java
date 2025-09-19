@@ -4,8 +4,6 @@ import core.constants.ApplicationConstants;
 import core.driver.BrowserManager;
 import core.reporting.ScreenshotHandler;
 import core.utils.LogUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.testng.ITestResult;
 import org.testng.annotations.*;
 
@@ -13,7 +11,6 @@ import org.testng.annotations.*;
  * BaseTest provides common setup and teardown for all test classes
  */
 public abstract class BaseTest {
-    protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     /**
      * Suite setup - runs once before all tests in the suite
@@ -21,7 +18,7 @@ public abstract class BaseTest {
     @BeforeSuite(alwaysRun = true)
     public void suiteSetup() {
         LogUtils.logSection("SUITE SETUP");
-        logger.info("Starting test suite execution");
+        LogUtils.logInfo("Starting test suite execution");
         
         // Log environment information
         LogUtils.logEnvironmentInfo("Java Version", System.getProperty("java.version"));
@@ -35,7 +32,7 @@ public abstract class BaseTest {
         // Clean up old screenshots
         ScreenshotHandler.cleanupOldScreenshots(7);
         
-        logger.info("Suite setup completed");
+        LogUtils.logInfo("Suite setup completed");
     }
 
     /**
@@ -47,15 +44,15 @@ public abstract class BaseTest {
         String className = this.getClass().getSimpleName();
         
         LogUtils.logTestSetup(className, testName);
-        logger.info("Setting up test: {}.{}", className, testName);
+        LogUtils.logInfo("Setting up test: " + className + "." + testName);
         
         // Configure and open browser
         try {
             BrowserManager.configure();
             BrowserManager.openBrowser();
-            logger.info("Browser opened successfully for test: {}", testName);
+            LogUtils.logInfo("Browser opened successfully for test: " + testName);
         } catch (Exception e) {
-            logger.error("Failed to open browser for test {}: {}", testName, e.getMessage(), e);
+            LogUtils.logError("Failed to open browser for test " + testName + ": " + e.getMessage(), e);
             throw new RuntimeException("Browser setup failed", e);
         }
     }
@@ -68,7 +65,7 @@ public abstract class BaseTest {
         String testName = result.getMethod().getMethodName();
         String className = this.getClass().getSimpleName();
         
-        logger.info("Tearing down test: {}.{}", className, testName);
+        LogUtils.logInfo("Tearing down test: " + className + "." + testName);
         
         // Take screenshot based on test result
         try {
@@ -86,15 +83,15 @@ public abstract class BaseTest {
                 LogUtils.logTestResult(testName, "SKIPPED", 0);
             }
         } catch (Exception e) {
-            logger.warn("Error during screenshot capture: {}", e.getMessage());
+            LogUtils.logWarning("Error during screenshot capture: " + e.getMessage());
         }
         
         // Close browser
         try {
             BrowserManager.quitBrowser();
-            logger.info("Browser closed successfully for test: {}", testName);
+            LogUtils.logInfo("Browser closed successfully for test: " + testName);
         } catch (Exception e) {
-            logger.warn("Error closing browser for test {}: {}", testName, e.getMessage());
+            LogUtils.logWarning("Error closing browser for test " + testName + ": " + e.getMessage());
         }
         
         LogUtils.logTestTeardown();
@@ -107,7 +104,7 @@ public abstract class BaseTest {
     public void classSetup() {
         String className = this.getClass().getSimpleName();
         LogUtils.logSection("CLASS SETUP: " + className);
-        logger.info("Setting up test class: {}", className);
+        LogUtils.logInfo("Setting up test class: " + className);
     }
 
     /**
@@ -116,7 +113,7 @@ public abstract class BaseTest {
     @AfterClass(alwaysRun = true)
     public void classTeardown() {
         String className = this.getClass().getSimpleName();
-        logger.info("Tearing down test class: {}", className);
+        LogUtils.logInfo("Tearing down test class: " + className);
         LogUtils.logSection("CLASS TEARDOWN: " + className);
     }
 
@@ -126,17 +123,17 @@ public abstract class BaseTest {
     @AfterSuite(alwaysRun = true)
     public void suiteTeardown() {
         LogUtils.logSection("SUITE TEARDOWN");
-        logger.info("Test suite execution completed");
+        LogUtils.logInfo("Test suite execution completed");
         
         // Perform any final cleanup
         try {
             // Force close any remaining browser instances
             BrowserManager.quitBrowser();
         } catch (Exception e) {
-            logger.warn("Error during final browser cleanup: {}", e.getMessage());
+            LogUtils.logWarning("Error during final browser cleanup: " + e.getMessage());
         }
         
-        logger.info("Suite teardown completed");
+        LogUtils.logInfo("Suite teardown completed");
     }
 
     /**

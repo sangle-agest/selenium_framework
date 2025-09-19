@@ -2,14 +2,16 @@ package pages.agoda;
 
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
+import core.elements.Button;
+import core.utils.BrowserUtils;
 import core.utils.LogUtils;
 import core.utils.WaitUtils;
 import io.qameta.allure.Step;
 import org.openqa.selenium.By;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 
 import static com.codeborne.selenide.Selenide.*;
 
@@ -17,7 +19,6 @@ import static com.codeborne.selenide.Selenide.*;
  * Updated AgodaSearchResultsPage with correct XPaths for search results
  */
 public class AgodaSearchResultsPage {
-    private static final Logger logger = LoggerFactory.getLogger(AgodaSearchResultsPage.class);
     
     // Search results elements - Updated to support both hotel and activities results
     private final ElementsCollection searchResults = $$(By.xpath("//div[@data-selenium='hotel-item'] | //div[contains(@class,'PropertyCard')] | //div[contains(@class,'property-card')] | //a[@data-testid='hotel-item'] | //a[@data-testid='activities-card-content']"));
@@ -28,7 +29,7 @@ public class AgodaSearchResultsPage {
     private final SelenideElement loadingIndicator = $(By.xpath("//div[contains(@class,'loading')] | //div[contains(@class,'spinner')] | //div[@data-testid='loading']"));
     
     public AgodaSearchResultsPage() {
-        logger.info("Initialized AgodaSearchResultsPageUpdated");
+        LogUtils.logTestStep("Initialized AgodaSearchResultsPageUpdated");
     }
     
     /**
