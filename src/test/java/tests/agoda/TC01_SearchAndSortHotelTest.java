@@ -56,10 +56,8 @@ public class TC01_SearchAndSortHotelTest extends AgodaBaseTest {
         // Step 1: Initialize homepage (already navigated by AgodaBaseTest)
         AgodaHomePage homePage = new AgodaHomePage();
         
-        // Verify homepage is loaded 
-        Assert.assertTrue(homePage.isHomepageDisplayed(), 
-            "Agoda homepage should be displayed");
-        LogUtils.logTestStep("✓ Agoda homepage loaded successfully");
+        // Verify homepage is loaded
+        verifyHomepageIsDisplayed(homePage);
         
         // Step 2: Search for destination
         homePage.searchDestination(destination);
@@ -83,6 +81,21 @@ public class TC01_SearchAndSortHotelTest extends AgodaBaseTest {
         verifyPriceSorting(resultsPage);
         
         LogUtils.logTestStep("TC01: Search and Sort Hotel test completed successfully");
+    }
+    
+    /**
+     * Verify homepage is displayed with detailed Allure reporting
+     * @param homePage the homepage object
+     */
+    @Step("Verify Agoda homepage is displayed")
+    private void verifyHomepageIsDisplayed(AgodaHomePage homePage) {
+        boolean isDisplayed = homePage.isHomepageDisplayed();
+        
+        Assert.assertTrue(isDisplayed, 
+            "Agoda homepage is not displayed! Please check if navigation was successful " +
+            "and all required page elements are loaded.");
+        
+        LogUtils.logTestStep("✓ Agoda homepage loaded successfully");
     }
     
     /**
