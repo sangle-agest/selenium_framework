@@ -70,14 +70,14 @@ public class TC01_SearchAndSortHotelTest extends AgodaBaseTest {
         
         LogUtils.logTestStep("✓ Hotel search completed successfully");
         
-        // Step 6: Verify search results
+        // Step 5: Verify search results
         verifySearchResults(resultsPage);
         
-        // Step 7: Sort by lowest price first
+        // Step 6: Sort by lowest price first
         resultsPage.sortBy(sortOption);
         LogUtils.logTestStep("✓ Applied sort: " + sortOption);
         
-        // Step 8: Verify price sorting
+        // Step 7: Verify price sorting
         verifyPriceSorting(resultsPage);
         
         LogUtils.logTestStep("TC01: Search and Sort Hotel test completed successfully");
