@@ -11,31 +11,110 @@ import pages.agoda.AgodaHomePage;
 import pages.agoda.AgodaSearchResultsPage;
 
 /**
- * TC 02: Search and Filter Hotel Test with JSON test data
+ * Consolidated Agoda Hotel Test Suite
  * 
- * Test Steps:
- * 1. Navigate to agoda.com (handled by AgodaBaseTest)
- * 2. Load test data from JSON file using DataProvider
- * 3. Input destination: Da Nang (using autocomplete)
- * 4. Input dates: Dynamic date selection  
- * 5. Input travelers: 2 rooms, 4 adults, 0 children
- * 6. Click Search (handles tab switching)
- * 7. Verify search results > 0 and destination is correct
- * 8. Apply Price filter: 500,000-1,000,000 VND 
- * 9. Apply Star filter: 3 stars
- * 10. Verify: Both filters are applied and results match criteria
- * 11. Remove price filter
- * 12. Verify: Price filter cleared, star filter remains, results update
+ * This test class contains all Agoda hotel booking test cases:
+ * - TC01: Search and Sort Hotel Test
+ * - TC02: Search and Filter Hotel Test
+ * - TC03: [Future test case - placeholder]
+ * 
+ * All test cases share common verification methods to reduce code duplication.
  */
 @Epic("Agoda Hotel Booking")
-@Feature("Hotel Search and Filter") 
-@Story("TC02 - Search and Filter Hotel Successfully")
-public class TC02_SearchAndFilterHotelTest extends AgodaBaseTest {
+@Feature("Hotel Search, Sort and Filter") 
+@Story("Agoda Hotel Test Suite - Comprehensive Testing")
+public class AgodaHotelTest extends AgodaBaseTest {
 
-    @Test(description = "Search for hotels in Da Nang and apply price and star filters")
+    /**
+     * TC01: Search and Sort Hotel Test with JSON test data
+     * 
+     * Test Steps:
+     * 1. Navigate to agoda.com (handled by AgodaBaseTest)
+     * 2. Load test data from JSON file using DataProvider
+     * 3. Input destination: Da Nang (using autocomplete)
+     * 4. Input dates: Dynamic date selection  
+     * 5. Input travelers: 2 rooms, 3 adults, 0 children
+     * 6. Click Search (handles tab switching)
+     * 7. Verify search results > 0
+     * 8. Sort by: Lowest price first
+     * 9. Verify: Top 5 results are sorted by price ascending
+     */
+    @Test(description = "TC01: Search for hotels in Da Nang and sort by price (lowest first)")
+    @Severity(SeverityLevel.CRITICAL)
+    @Description("Verify that user can search for hotels in Da Nang with specific dates and travelers, then sort results by lowest price first")
+    public void tc01_testSearchAndSortHotel() {
+        // Load test data from JSON file
+        AgodaTestData testData = AgodaTestDataProvider.getTestData("TC01_SearchAndSortHotel");
+        
+        // Validate required test data
+        Assert.assertTrue(AgodaTestDataProvider.validateTestData(testData, "destination", "checkInDate", "checkOutDate", "occupancy"),
+            "Test data validation failed");
+        
+        // Log test data information automatically
+        AgodaTestDataProvider.logTestDataInfo(testData);
+        
+        // Extract test data for easier access
+        String destination = testData.getDestination();
+        String checkInDate = testData.getCheckInDate();
+        String checkOutDate = testData.getCheckOutDate();
+        int rooms = testData.getOccupancy().getRooms();
+        int adults = testData.getOccupancy().getAdults();
+        int children = testData.getOccupancy().getChildren();
+        String sortOption = testData.getSortOption();
+        
+        LogUtils.logTestStep("Starting TC01: Search and Sort Hotel test with JSON test data");
+        
+        // Step 1: Initialize homepage (already navigated by AgodaBaseTest)
+        AgodaHomePage homePage = new AgodaHomePage();
+        
+        // Verify homepage is loaded
+        verifyHomepageIsDisplayed(homePage);
+        
+        // Step 2: Search for destination
+        homePage.searchDestination(destination);
+        
+        // Step 3: Select travel dates
+        homePage.selectTravelDates(checkInDate, checkOutDate);
+        
+        // Step 4: Set occupancy and perform search
+        AgodaSearchResultsPage resultsPage = homePage.setOccupancyAndSearch(rooms, adults, children);
+        
+        LogUtils.logTestStep("✓ Hotel search completed successfully");
+        
+        // Step 5: Verify search results
+        verifySearchResults(resultsPage);
+        
+        // Step 6: Sort by lowest price first
+        resultsPage.sortBy(sortOption);
+        LogUtils.logTestStep("✓ Applied sort: " + sortOption);
+        
+        // Step 7: Verify price sorting
+        verifyPriceSorting(resultsPage);
+        
+        LogUtils.logTestStep("TC01: Search and Sort Hotel test completed successfully");
+    }
+
+    /**
+     * TC02: Search and Filter Hotel Test with JSON test data
+     * 
+     * Test Steps:
+     * 1. Navigate to agoda.com (handled by AgodaBaseTest)
+     * 2. Load test data from JSON file using DataProvider
+     * 3. Input destination: Da Nang (using autocomplete)
+     * 4. Input dates: Dynamic date selection  
+     * 5. Input travelers: 2 rooms, 4 adults, 0 children
+     * 6. Click Search (handles tab switching)
+     * 7. Verify search results > 0 and destination is correct
+     * 8. Apply Price filter: 500,000-1,000,000 VND 
+     * 9. Apply Star filter: 3 stars
+     * 10. Verify: Both filters are applied and results match criteria
+     * 11. Remove price filter
+     * 12. Verify: Price filter cleared, star filter remains, results update
+     */
+    @Test(description = "TC02: Search for hotels in Da Nang and apply price and star filters")
     @Severity(SeverityLevel.CRITICAL)
     @Description("Verify that user can search for hotels in Da Nang with specific dates and travelers, apply price and star filters, then remove price filter while keeping star filter")
-    public void testSearchAndFilterHotel() {
+    public void tc02_testSearchAndFilterHotel() {
         // Load test data from JSON file
         AgodaTestData testData = AgodaTestDataProvider.getTestData("TC02_SearchAndFilterHotel");
         
@@ -97,7 +176,30 @@ public class TC02_SearchAndFilterHotelTest extends AgodaBaseTest {
         
         LogUtils.logTestStep("TC02: Search and Filter Hotel test completed successfully");
     }
-    
+
+    /**
+     * TC03: [Future Test Case - Placeholder]
+     * 
+     * This test case is reserved for future implementation.
+     * Possible scenarios:
+     * - Hotel details and booking flow
+     * - Advanced filtering with multiple criteria
+     * - User account and booking management
+     * - Mobile responsive testing
+     */
+    @Test(description = "TC03: [Future test case - to be implemented]", enabled = false)
+    @Severity(SeverityLevel.NORMAL)
+    @Description("Placeholder for future test case implementation")
+    public void tc03_testFutureScenario() {
+        LogUtils.logTestStep("TC03: Future test case - implementation pending");
+        // TODO: Implement future test case
+        Assert.assertTrue(true, "Placeholder test - implementation pending");
+    }
+
+    // ===========================================
+    // SHARED VERIFICATION METHODS
+    // ===========================================
+
     /**
      * Verify homepage is displayed with detailed Allure reporting
      * @param homePage the homepage object
@@ -129,6 +231,23 @@ public class TC02_SearchAndFilterHotelTest extends AgodaBaseTest {
         LogUtils.logVerificationStep("✓ Search results verified: " + resultCount + " results found");
     }
     
+    /**
+     * Verify price sorting is correct with detailed Allure reporting
+     * @param resultsPage the search results page object
+     */
+    @Step("Verify price sorting is correct (lowest price first)")
+    private void verifyPriceSorting(AgodaSearchResultsPage resultsPage) {
+        AgodaSearchResultsPage.PriceSortingResult sortingResult = resultsPage.checkPriceSorting();
+        
+        Assert.assertTrue(sortingResult.isCorrect(), 
+            "Price sorting verification failed! " + sortingResult.getErrorMessage() + 
+            ". Checked " + sortingResult.getCheckedResults() + " results. Details: " + 
+            sortingResult.getDetails());
+        
+        LogUtils.logVerificationStep("✓ Price sorting verification completed successfully for " + 
+                           sortingResult.getCheckedResults() + " results");
+    }
+
     /**
      * Verify destination appears correctly in search results
      * @param resultsPage the search results page object
