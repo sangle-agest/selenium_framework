@@ -19,23 +19,24 @@
     },
     "TC02_SearchAndFilterHotel": {
       "testName": "TC02: Search and Filter Hotel Successfully",
-      "description": "Search for hotels and apply filters",
-      "destination": "Bangkok",
-      "checkInDate": "<PLUS_2_WEEKS>",
+      "description": "Search for hotels in Da Nang and apply price and star filters",
+      "destination": "Da Nang",
+      "checkInDate": "<NEXT_FRIDAY>",
       "checkOutDate": "<PLUS_3_DAYS>",
       "occupancy": {
-        "rooms": 1,
-        "adults": 2,
-        "children": 1
+        "rooms": 2,
+        "adults": 4,
+        "children": 0
       },
       "filters": {
-        "priceRange": "100-500",
-        "starRating": "4",
-        "amenities": ["Free WiFi", "Swimming Pool"]
+        "priceRange": "500000-1000000",
+        "starRating": 3,
+        "currency": "VND"
       },
       "expectedResults": {
         "minSearchResults": 1,
-        "maxPrice": 500
+        "destination": "Da Nang",
+        "filtersApplied": ["price", "star"]
       }
     },
     "TC03_SearchMultipleDestinations": {
