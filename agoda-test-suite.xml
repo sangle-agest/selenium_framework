@@ -19,7 +19,7 @@
     </test>
 
     <test name="TC02 - Search and Filter Hotel" preserve-order="true">
-        <parameter name="testDescription" value="Search for hotels in Phuket and apply Resort and 5-star filters"/>
+        <parameter name="testDescription" value="Search for hotels in Da Nang and apply price and star filters"/>
         <classes>
             <class name="tests.agoda.TC02_SearchAndFilterHotelTest"/>
         </classes>

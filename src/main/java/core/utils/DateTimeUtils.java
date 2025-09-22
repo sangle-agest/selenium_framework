@@ -9,6 +9,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
+import java.time.temporal.TemporalAdjusters;
 import java.time.DayOfWeek;
 
 /**
@@ -68,15 +69,14 @@ public class DateTimeUtils {
     public static String getNextFriday(DateTimeFormatter formatter) {
         try {
             LocalDate today = LocalDate.now();
-            LocalDate nextFriday = today.with(DayOfWeek.FRIDAY);
+            LocalDate nextFriday;
             
-            // If today is Friday or later in the week, get next Friday
-            if (today.getDayOfWeek().getValue() >= DayOfWeek.FRIDAY.getValue()) {
-                nextFriday = nextFriday.plusWeeks(1);
-            }
+            // Always get a Friday that's at least 1 week in the future to avoid booking restrictions
+            // Most hotels don't allow same-week bookings
+            nextFriday = today.plusWeeks(1).with(TemporalAdjusters.nextOrSame(DayOfWeek.FRIDAY));
             
             String date = nextFriday.format(formatter);
-            logger.debug("Next Friday: {}", date);
+            logger.debug("Next Friday (at least 1 week ahead): {}", date);
             return date;
         } catch (Exception e) {
             logger.error("Failed to get next Friday: {}", e.getMessage());
@@ -102,16 +102,14 @@ public class DateTimeUtils {
     public static String getNextFridayPlus3Days(DateTimeFormatter formatter) {
         try {
             LocalDate today = LocalDate.now();
-            LocalDate nextFriday = today.with(DayOfWeek.FRIDAY);
             
-            // If today is Friday or later in the week, get next Friday
-            if (today.getDayOfWeek().getValue() >= DayOfWeek.FRIDAY.getValue()) {
-                nextFriday = nextFriday.plusWeeks(1);
-            }
+            // Use the same logic as getNextFriday to ensure consistency
+            // Get a Friday that's at least 1 week in the future
+            LocalDate nextFriday = today.plusWeeks(1).with(TemporalAdjusters.nextOrSame(DayOfWeek.FRIDAY));
             
             LocalDate targetDate = nextFriday.plusDays(3);
             String date = targetDate.format(formatter);
-            logger.debug("Next Friday + 3 days: {}", date);
+            logger.debug("Next Friday + 3 days (at least 1 week ahead): {}", date);
             return date;
         } catch (Exception e) {
             logger.error("Failed to get next Friday + 3 days: {}", e.getMessage());
@@ -166,9 +164,13 @@ public class DateTimeUtils {
     public static String getNextDayOfWeek(DayOfWeek targetDay, DateTimeFormatter formatter) {
         try {
             LocalDate today = LocalDate.now();
-            LocalDate nextTargetDay = today.with(TemporalAdjusters.next(targetDay));
+            
+            // For booking scenarios, ensure the date is at least 1 week in the future
+            // to avoid same-week booking restrictions that most hotels have
+            LocalDate nextTargetDay = today.plusWeeks(1).with(TemporalAdjusters.nextOrSame(targetDay));
+            
             String date = nextTargetDay.format(formatter);
-            logger.debug("Next {}: {}", targetDay, date);
+            logger.debug("Next {} (at least 1 week ahead): {}", targetDay, date);
             return date;
         } catch (Exception e) {
             logger.error("Failed to get next {}: {}", targetDay, e.getMessage());
@@ -198,10 +200,14 @@ public class DateTimeUtils {
     public static String getNextDayOfWeekPlusDays(DayOfWeek targetDay, int plusDays, DateTimeFormatter formatter) {
         try {
             LocalDate today = LocalDate.now();
-            LocalDate nextTargetDay = today.with(TemporalAdjusters.next(targetDay));
+            
+            // Use the same logic as getNextDayOfWeek for consistency
+            // Ensure the date is at least 1 week in the future
+            LocalDate nextTargetDay = today.plusWeeks(1).with(TemporalAdjusters.nextOrSame(targetDay));
             LocalDate finalDate = nextTargetDay.plusDays(plusDays);
+            
             String date = finalDate.format(formatter);
-            logger.debug("Next {} + {} days: {}", targetDay, plusDays, date);
+            logger.debug("Next {} + {} days (at least 1 week ahead): {}", targetDay, plusDays, date);
             return date;
         } catch (Exception e) {
             logger.error("Failed to get next {} + {} days: {}", targetDay, plusDays, e.getMessage());
@@ -770,21 +776,16 @@ public class DateTimeUtils {
 
     /**
      * Helper method to get the next occurrence of a specific day of the week.
-     * If today is the same day of the week, it returns next week's occurrence.
+     * For booking scenarios, ensures the date is at least 1 week in the future
+     * to avoid same-week booking restrictions that most hotels have.
      * 
      * @param baseDate The base date to calculate from
      * @param targetDay The target day of the week
      * @return LocalDate representing the next occurrence of the target day
      */
     private static LocalDate getNextDayOfWeek(LocalDate baseDate, DayOfWeek targetDay) {
-        DayOfWeek currentDay = baseDate.getDayOfWeek();
-        int daysUntilTarget = targetDay.getValue() - currentDay.getValue();
-        
-        // If the target day is today or in the past this week, get next week's occurrence
-        if (daysUntilTarget <= 0) {
-            daysUntilTarget += 7;
-        }
-        
-        return baseDate.plusDays(daysUntilTarget);
+        // For booking scenarios, ensure the date is at least 1 week in the future
+        // to avoid same-week booking restrictions that most hotels have
+        return baseDate.plusWeeks(1).with(TemporalAdjusters.nextOrSame(targetDay));
     }
 }

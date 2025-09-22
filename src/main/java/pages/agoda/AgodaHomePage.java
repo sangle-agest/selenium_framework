@@ -8,14 +8,13 @@ import core.elements.TextBox;
 import core.utils.LogUtils;
 import core.utils.PageWaitUtils;
 import core.utils.WaitUtils;
+import core.utils.DatePickerJavaScriptUtils;
+import core.utils.CalendarMonthParser;
 import io.qameta.allure.Step;
 import org.openqa.selenium.By;
 
-import java.time.Duration;
-
 import static com.codeborne.selenide.Selenide.$;
-
-import static com.codeborne.selenide.Selenide.*;
+import static com.codeborne.selenide.Selenide.open;
 
 /**
  * Updated AgodaHomePage with correct XPaths captured from actual Agoda site
@@ -30,11 +29,6 @@ public class AgodaHomePage {
     
     // Date picker elements
     private final SelenideElement checkInButton = $(By.xpath("//div[@id='check-in-box' and @role='button']"));
-    private final SelenideElement checkOutButton = $(By.xpath("//div[@id='check-out-box' and @role='button']"));
-    
-    // Calendar tab elements - verify before date selection
-    private final SelenideElement calendarTab = $(By.xpath("//button[@role='tab']//p[normalize-space()='Calendar']"));
-    private final SelenideElement flexibleTab = $(By.xpath("//button[@role='tab']//p[normalize-space()=\"I'm flexible\"]"));
     
     // Search button  
     private final Button searchButton = new Button($(By.xpath("//button[@data-selenium='searchButton']")), "Search Button");
@@ -86,40 +80,13 @@ public class AgodaHomePage {
     }
 
     /**
-     * Verify calendar tabs are displayed and interactable
-     */
-    @Step("Verify calendar tabs are displayed and interactable")
-    public void verifyCalendarTabs() {
-        LogUtils.logTestStep("Verifying calendar tabs are displayed and interactable");
-        
-        try {
-            // Wait for calendar tabs to be visible with shorter timeout
-            WaitUtils.waitForVisible(calendarTab, Duration.ofSeconds(3));
-            LogUtils.logVerificationStep("✓ Calendar tab is displayed and interactable");
-        } catch (Exception e) {
-            LogUtils.logVerificationStep("⚠ Calendar tab not found - continuing without verification: " + e.getMessage());
-        }
-        
-        try {
-            WaitUtils.waitForVisible(flexibleTab, Duration.ofSeconds(3));
-            LogUtils.logVerificationStep("✓ I'm flexible tab is displayed and interactable");
-        } catch (Exception e) {
-            LogUtils.logVerificationStep("⚠ I'm flexible tab not found - continuing without verification: " + e.getMessage());
-        }
-    }
-
-    /**
      * Check if DatePicker popup is accessible and visible
      */
     private boolean isDatePickerVisible() {
         try {
-            LogUtils.logTestStep("DEBUG: Checking for DatePicker accessibility...");
-            SelenideElement datePickerPopup = $(By.xpath("//div[@id='DatePicker__AccessibleV2']"));
-            boolean isVisible = datePickerPopup.exists() && datePickerPopup.isDisplayed();
-            LogUtils.logTestStep("DEBUG: DatePicker visibility check result: " + isVisible);
-            return isVisible;
+            return $(By.xpath("//div[@id='DatePicker__AccessibleV2']")).exists() && 
+                   $(By.xpath("//div[@id='DatePicker__AccessibleV2']")).isDisplayed();
         } catch (Exception e) {
-            LogUtils.logTestStep("DEBUG: Exception checking DatePicker visibility: " + e.getMessage());
             return false;
         }
     }
@@ -131,64 +98,111 @@ public class AgodaHomePage {
     public void selectDates(String checkInDate, String checkOutDate) {
         LogUtils.logTestStep("Selecting dates - Check-in: " + checkInDate + ", Check-out: " + checkOutDate);
         
-        // First check if DatePicker popup is already visible after autocomplete selection
-        LogUtils.logTestStep("Checking if DatePicker popup is already visible after autocomplete selection");
-        
-        if (isDatePickerVisible()) {
-            LogUtils.logVerificationStep("✓ DatePicker popup is already visible, proceeding with date selection");
-        } else {
-            LogUtils.logTestStep("DatePicker popup not visible, clicking check-in button to open calendar");
+        // Open DatePicker if not already visible
+        if (!isDatePickerVisible()) {
             checkInButton.click();
-            
-            // Wait for DatePicker popup to become visible using common method
-            boolean isPopupVisible = PageWaitUtils.waitForPopupVisible(this::isDatePickerVisible, "DatePicker");
-            
-            if (!isPopupVisible) {
+            if (!PageWaitUtils.waitForPopupVisible(this::isDatePickerVisible, "DatePicker")) {
                 return;
             }
         }
         
-        LogUtils.logTestStep("Selecting check-in date: " + checkInDate);
         selectDate(checkInDate);
-        
-        LogUtils.logTestStep("Selecting check-out date: " + checkOutDate);
         selectDate(checkOutDate);
     }
 
-        /**
-     * Select a specific date using simple date format (YYYY-MM-DD) within the DatePicker popup
+    /**
+     * Select a specific date using the new Agoda date picker structure
+     * Simplified version using utilities
      */
     private void selectDate(String dateString) {
         try {
-            LogUtils.logTestStep("Looking for date: " + dateString);
-            
-            // First ensure DatePicker popup is visible
+            // Ensure DatePicker popup is visible
             SelenideElement datePickerPopup = $(By.xpath("//div[@id='DatePicker__AccessibleV2']"));
             if (!datePickerPopup.exists() || !datePickerPopup.isDisplayed()) {
-                LogUtils.logTestStep("ERROR: DatePicker popup is not visible when trying to select date");
+                LogUtils.logTestStep("ERROR: DatePicker popup is not visible");
                 return;
             }
             
-            // Use common date selection method
-            boolean dateSelected = PageWaitUtils.waitForDateSelection(dateString, "//div[@id='DatePicker__AccessibleV2']");
+            WaitUtils.sleep(1000); // Wait for popup to fully load
             
-            if (!dateSelected) {
-                // Debug: Check available dates
-                LogUtils.logTestStep("DEBUG: Checking what dates are available in the DatePicker popup...");
-                String availableDatesScript = "var dates = document.evaluate(\"//div[@id='DatePicker__AccessibleV2']//span[@data-selenium-date]\", document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null); var result = []; for(var i = 0; i < Math.min(10, dates.snapshotLength); i++) { result.push(dates.snapshotItem(i).getAttribute('data-selenium-date')); } return result.join(', ');";
-                String availableDates = (String) executeJavaScript(availableDatesScript);
-                LogUtils.logTestStep("DEBUG: Available dates in popup: " + availableDates);
-                
-                // Try to find a similar date if exact date not available
-                LogUtils.logTestStep("DEBUG: Attempting to find alternative dates close to: " + dateString);
-                String alternativeScript = "var dates = document.evaluate(\"//div[@id='DatePicker__AccessibleV2']//span[@data-selenium-date]\", document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null); for(var i = 0; i < dates.snapshotLength; i++) { var date = dates.snapshotItem(i).getAttribute('data-selenium-date'); if(date && date.includes('2025-09')) { dates.snapshotItem(i).click(); return 'Clicked alternative date: ' + date; } } return 'No suitable alternative found';";
-                String alternativeResult = (String) executeJavaScript(alternativeScript);
-                LogUtils.logTestStep("DEBUG: Alternative date selection result: " + alternativeResult);
+            // Try to click the date directly
+            SelenideElement targetDateElement = $(By.xpath("//span[@data-selenium-date='" + dateString + "']"));
+            if (targetDateElement.exists() && targetDateElement.isDisplayed()) {
+                String clickResult = DatePickerJavaScriptUtils.clickDate(dateString);
+                LogUtils.logTestStep("✓ " + clickResult);
+                WaitUtils.sleep(500);
+                return;
             }
+            
+            // If date not visible, check if navigation is needed
+            String availableDates = DatePickerJavaScriptUtils.getAvailableDates();
+            if (!availableDates.contains(dateString)) {
+                // Parse date and navigate to correct month
+                String[] dateParts = dateString.split("-");
+                int targetYear = Integer.parseInt(dateParts[0]);
+                int targetMonth = Integer.parseInt(dateParts[1]);
+                
+                if (navigateToTargetMonth(targetYear, targetMonth)) {
+                    WaitUtils.sleep(1000);
+                    String retryResult = DatePickerJavaScriptUtils.clickDate(dateString);
+                    LogUtils.logTestStep("✓ After navigation: " + retryResult);
+                    return;
+                }
+            }
+            
+            // Fallback: try alternative date in same month
+            String targetMonthPrefix = dateString.substring(0, 7); // YYYY-MM
+            String alternativeResult = DatePickerJavaScriptUtils.clickAlternativeDate(targetMonthPrefix);
+            LogUtils.logTestStep("Fallback: " + alternativeResult);
             
         } catch (Exception e) {
             LogUtils.logTestStep("ERROR: Exception selecting date: " + e.getMessage());
-            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Navigate to a specific target month and year in the date picker
+     * Simplified using utilities
+     */
+    private boolean navigateToTargetMonth(int targetYear, int targetMonth) {
+        try {
+            String currentMonthText = DatePickerJavaScriptUtils.getCurrentMonthCaption();
+            CalendarMonthParser.MonthInfo currentMonth = CalendarMonthParser.parseMonthInfo(currentMonthText);
+            
+            if (currentMonth == null) {
+                return false;
+            }
+            
+            int monthDiff = CalendarMonthParser.calculateMonthDifference(currentMonth, targetYear, targetMonth);
+            
+            if (monthDiff == 0) {
+                return true; // Already at target month
+            }
+            
+            // Navigate forward or backward
+            boolean navigateForward = monthDiff > 0;
+            int stepsToNavigate = Math.abs(monthDiff);
+            String buttonSelector = navigateForward ? 
+                "//button[@data-selenium='calendar-next-month-button']" : 
+                "//button[@data-selenium='calendar-previous-month-button']";
+            
+            for (int i = 0; i < stepsToNavigate && i < 24; i++) { // Limit to 24 months max
+                SelenideElement navButton = $(By.xpath(buttonSelector));
+                if (navButton.exists() && navButton.isDisplayed()) {
+                    navButton.click();
+                    WaitUtils.sleep(500);
+                } else {
+                    return false;
+                }
+            }
+            
+            // Verify we reached the target month
+            WaitUtils.sleep(1000);
+            String finalMonthText = DatePickerJavaScriptUtils.getCurrentMonthCaption();
+            return finalMonthText.contains("Tháng " + targetMonth) && finalMonthText.contains(String.valueOf(targetYear));
+            
+        } catch (Exception e) {
+            return false;
         }
     }
 
@@ -214,9 +228,6 @@ public class AgodaHomePage {
      */
     private void setRoomCount(int targetRooms) {
         int currentRooms = Integer.parseInt(roomValue.getText().trim());
-        LogUtils.logTestStep("Current rooms: " + currentRooms + ", Target rooms: " + targetRooms);
-        
-        // Use common counter update method
         PageWaitUtils.updateCounterSmart(roomValue, currentRooms, targetRooms, addRoom, minusRoom, "Room");
     }
 
@@ -225,9 +236,6 @@ public class AgodaHomePage {
      */
     private void setAdultCount(int targetAdults) {
         int currentAdults = Integer.parseInt(adultValue.getText().trim());
-        LogUtils.logTestStep("Current adults: " + currentAdults + ", Target adults: " + targetAdults);
-        
-        // Use common counter update method
         PageWaitUtils.updateCounterSmart(adultValue, currentAdults, targetAdults, addAdult, minusAdult, "Adult");
     }
 
@@ -236,9 +244,6 @@ public class AgodaHomePage {
      */
     private void setChildCount(int targetChildren) {
         int currentChildren = Integer.parseInt(childValue.getText().trim());
-        LogUtils.logTestStep("Current children: " + currentChildren + ", Target children: " + targetChildren);
-        
-        // Use common counter update method
         PageWaitUtils.updateCounterSmart(childValue, currentChildren, targetChildren, addChild, minusChild, "Children");
     }
 
@@ -247,16 +252,13 @@ public class AgodaHomePage {
      */
     @Step("Click search button")
     public AgodaSearchResultsPage clickSearchButton() {
-        LogUtils.logTestStep("Clicking search button");
         searchButton.click();
         
         // Handle new tab - switch back to expected tab
-        LogUtils.logTestStep("Handling tab switching after search");
         SwitchTabs.switchToExpectedTab();
         
         // Create results page instance and wait for it to load
         AgodaSearchResultsPage resultsPage = new AgodaSearchResultsPage();
-        LogUtils.logTestStep("Waiting for search results page to fully load after tab switch...");
         resultsPage.waitForPageToLoad();
         
         return resultsPage;
@@ -269,7 +271,6 @@ public class AgodaHomePage {
     public void searchDestination(String destination) {
         LogUtils.logTestStep("Step 1: Searching for destination - " + destination);
         enterDestination(destination);
-        LogUtils.logVerificationStep("✓ Destination search completed");
     }
     
     /**
@@ -279,7 +280,7 @@ public class AgodaHomePage {
     public void selectTravelDates(String checkInDate, String checkOutDate) {
         LogUtils.logTestStep("Step 2: Selecting travel dates - Check-in: " + checkInDate + ", Check-out: " + checkOutDate);
         
-        // Wait for the page to be ready for date selection by checking if check-in button is clickable
+        // Wait for the page to be ready for date selection
         WaitUtils.waitForCondition(() -> {
             try {
                 return checkInButton.exists() && checkInButton.isDisplayed();
@@ -289,7 +290,6 @@ public class AgodaHomePage {
         }, 10);
         
         selectDates(checkInDate, checkOutDate);
-        LogUtils.logVerificationStep("✓ Travel dates selection completed");
     }
     
     /**
@@ -299,7 +299,6 @@ public class AgodaHomePage {
     public AgodaSearchResultsPage setOccupancyAndSearch(int rooms, int adults, int children) {
         LogUtils.logTestStep("Step 3: Setting occupancy - Rooms: " + rooms + ", Adults: " + adults + ", Children: " + children);
         setOccupancy(rooms, adults, children);
-        LogUtils.logVerificationStep("✓ Occupancy set, clicking search button");
         return clickSearchButton();
     }
 
