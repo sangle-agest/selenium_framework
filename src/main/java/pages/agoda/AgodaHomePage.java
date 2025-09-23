@@ -254,8 +254,8 @@ public class AgodaHomePage {
     public AgodaSearchResultsPage clickSearchButton() {
         searchButton.click();
         
-        // Handle new tab - switch back to expected tab
-        SwitchTabs.switchToExpectedTab();
+        // Handle new tab - switch to hotel search results tab
+        SwitchTabs.switchToHotelSearchTab();
         
         // Create results page instance and wait for it to load
         AgodaSearchResultsPage resultsPage = new AgodaSearchResultsPage();
@@ -340,31 +340,42 @@ public class AgodaHomePage {
     }
 
     /**
-     * Helper class for tab switching
+     * Helper class for tab switching - Updated to prioritize hotel search results page
      */
     private static class SwitchTabs {
-        @Step("Switch to expected search results tab")
-        public static void switchToExpectedTab() {
+        @Step("Switch to hotel search results tab")
+        public static void switchToHotelSearchTab() {
             try {
                 // Get all window handles
                 java.util.Set<String> windowHandles = WebDriverRunner.getWebDriver().getWindowHandles();
                 
                 if (windowHandles.size() > 1) {
-                    // Switch through tabs to find the expected one
+                    // First, look specifically for hotel search results page
                     for (String windowHandle : windowHandles) {
                         WebDriverRunner.getWebDriver().switchTo().window(windowHandle);
                         String currentUrl = WebDriverRunner.getWebDriver().getCurrentUrl();
                         
-                        // Check if this is the expected search results tab
-                        if (currentUrl.contains("agoda.com/activities/search") || 
-                            currentUrl.contains("agoda.com/search")) {
-                            LogUtils.logTestStep("Switched to expected search results tab: " + currentUrl);
+                        // Priority: Hotel search results page with parameters
+                        if (currentUrl.contains("agoda.com/search?") && 
+                            (currentUrl.contains("city=") || currentUrl.contains("checkIn="))) {
+                            LogUtils.logTestStep("Switched to hotel search results tab: " + currentUrl);
+                            return;
+                        }
+                    }
+                    
+                    // If hotel search tab not found, look for any search page
+                    for (String windowHandle : windowHandles) {
+                        WebDriverRunner.getWebDriver().switchTo().window(windowHandle);
+                        String currentUrl = WebDriverRunner.getWebDriver().getCurrentUrl();
+                        
+                        if (currentUrl.contains("agoda.com/search")) {
+                            LogUtils.logTestStep("Switched to search results tab: " + currentUrl);
                             return;
                         }
                     }
                 }
                 
-                LogUtils.logTestStep("Staying on current tab");
+                LogUtils.logTestStep("Staying on current tab - no search results tab found");
             } catch (Exception e) {
                 LogUtils.logTestStep("Error switching tabs: " + e.getMessage());
             }
