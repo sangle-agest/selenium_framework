@@ -21,7 +21,12 @@ public class AgodaSearchResultsPage {
     
     // Search results elements - Updated to support both hotel and activities results
     private final ElementsCollection searchResults = $$(By.xpath("//div[@data-selenium='hotel-item'] | //div[contains(@class,'PropertyCard')] | //div[contains(@class,'property-card')] | //a[@data-testid='hotel-item'] | //a[@data-testid='activities-card-content']"));
-    private final ElementsCollection originalPrices = $$(By.xpath("//span[@data-selenium='display-price'] | //span[@data-testid='hotel-original-price'] | //span[@data-testid='activities-original-price']"));
+    
+    // Price elements - Prioritize display prices that show filtered results
+    private final ElementsCollection displayPrices = $$(By.xpath("//span[@data-selenium='display-price'] | //div[@data-element-name='final-price']//span[@data-selenium='display-price'] | //span[contains(@class,'PropertyCardPrice__Value')]"));
+    
+    // Fallback for original prices if display prices not found
+    private final ElementsCollection originalPrices = $$(By.xpath("//span[@data-testid='hotel-original-price'] | //span[@data-testid='activities-original-price']"));
     
     // Sort elements for waiting - Updated for hotel search results page
     private final SelenideElement sortContainer = $(By.xpath("//div[@id='sort-bar'] | //div[@data-element-name='sort-bar-container']"));
@@ -221,27 +226,33 @@ public class AgodaSearchResultsPage {
         // Wait for prices to fully load before verification
         waitForPricesToLoad();
         
-        // Log current state of price elements
-        LogUtils.logTestStep("Found " + originalPrices.size() + " price elements");
-        ElementsCollection priceElementsToUse = originalPrices;
+        // Log current state of price elements - prioritize display prices
+        LogUtils.logTestStep("Found " + displayPrices.size() + " display price elements");
+        ElementsCollection priceElementsToUse = displayPrices;
         
-        if (originalPrices.size() == 0) {
-            LogUtils.logTestStep("⚠ No price elements found - checking alternative selectors...");
+        if (displayPrices.size() == 0) {
+            LogUtils.logTestStep("⚠ No display price elements found - trying original prices...");
+            priceElementsToUse = originalPrices;
+            LogUtils.logTestStep("Found " + originalPrices.size() + " original price elements");
             
-            // Try alternative price selectors for hotel search page
-            ElementsCollection altPrices1 = $$(By.xpath("//span[contains(@class,'price') or contains(@class,'Price')]"));
-            ElementsCollection altPrices2 = $$(By.xpath("//div[@data-selenium='hotel-item']//span[contains(text(),'₫') or contains(text(),'VND')]"));
-            
-            LogUtils.logTestStep("Alternative selector 1 found: " + altPrices1.size() + " elements");
-            LogUtils.logTestStep("Alternative selector 2 found: " + altPrices2.size() + " elements");
-            
-            // Use alternative if available
-            if (altPrices1.size() > 0) {
-                priceElementsToUse = altPrices1;
-                LogUtils.logTestStep("Using alternative price selector 1");
-            } else if (altPrices2.size() > 0) {
-                priceElementsToUse = altPrices2;
-                LogUtils.logTestStep("Using alternative price selector 2");
+            if (originalPrices.size() == 0) {
+                LogUtils.logTestStep("⚠ No price elements found - checking alternative selectors...");
+                
+                // Try alternative price selectors for hotel search page
+                ElementsCollection altPrices1 = $$(By.xpath("//span[contains(@class,'price') or contains(@class,'Price')]"));
+                ElementsCollection altPrices2 = $$(By.xpath("//div[@data-selenium='hotel-item']//span[contains(text(),'₫') or contains(text(),'VND')]"));
+                
+                LogUtils.logTestStep("Alternative selector 1 found: " + altPrices1.size() + " elements");
+                LogUtils.logTestStep("Alternative selector 2 found: " + altPrices2.size() + " elements");
+                
+                // Use alternative if available
+                if (altPrices1.size() > 0) {
+                    priceElementsToUse = altPrices1;
+                    LogUtils.logTestStep("Using alternative price selector 1");
+                } else if (altPrices2.size() > 0) {
+                    priceElementsToUse = altPrices2;
+                    LogUtils.logTestStep("Using alternative price selector 2");
+                }
             }
         }
         
@@ -300,24 +311,29 @@ public class AgodaSearchResultsPage {
             LogUtils.logTestStep("Waiting for price elements to be visible...");
             WaitUtils.sleep(2000); // Small delay to allow prices to stabilize
             
-            // Wait for at least some price elements to be present
+            // Wait for at least some price elements to be present - check display prices first
             int attempts = 0;
             int maxAttempts = 10;
-            while (originalPrices.size() == 0 && attempts < maxAttempts) {
+            while (displayPrices.size() == 0 && originalPrices.size() == 0 && attempts < maxAttempts) {
                 LogUtils.logTestStep("Attempt " + (attempts + 1) + ": Waiting for price elements to load...");
                 WaitUtils.sleep(1000);
                 attempts++;
             }
             
-            if (originalPrices.size() == 0) {
+            // Determine which price collection to use
+            ElementsCollection pricesToCheck = displayPrices.size() > 0 ? displayPrices : originalPrices;
+            
+            if (pricesToCheck.size() == 0) {
                 LogUtils.logTestStep("⚠ Warning: No price elements found after waiting");
                 return;
             }
             
+            LogUtils.logTestStep("Using " + (displayPrices.size() > 0 ? "display prices" : "original prices") + " for verification (" + pricesToCheck.size() + " elements)");
+            
             // Wait for the first few price elements to have actual text content
             LogUtils.logTestStep("Waiting for price content to load...");
-            for (int i = 0; i < Math.min(3, originalPrices.size()); i++) {
-                SelenideElement priceElement = originalPrices.get(i);
+            for (int i = 0; i < Math.min(3, pricesToCheck.size()); i++) {
+                SelenideElement priceElement = pricesToCheck.get(i);
                 
                 // Wait for price element to have non-empty text
                 int textAttempts = 0;
@@ -495,26 +511,50 @@ public class AgodaSearchResultsPage {
         LogUtils.logTestStep("Applying hotel price filter using input boxes: " + minPrice + " - " + maxPrice);
         
         try {
+            // Store initial result count to detect changes
+            int initialResultCount = getSearchResultCount();
+            LogUtils.logTestStep("Initial result count before filtering: " + initialResultCount);
+            
             // Clear and set minimum price
             LogUtils.logTestStep("Setting minimum price: " + minPrice);
             minPriceInput.clear();
             minPriceInput.setValue(String.valueOf(minPrice));
             
+            // Trigger input event (press Enter to ensure processing)
+            minPriceInput.pressEnter();
+            
             // Wait for page to process the min price change
             LogUtils.logTestStep("Waiting for page to process minimum price change...");
-            WaitUtils.sleep(2000);
+            WaitUtils.sleep(3000);
             
             // Clear and set maximum price
             LogUtils.logTestStep("Setting maximum price: " + maxPrice);
             maxPriceInput.clear();
             maxPriceInput.setValue(String.valueOf(maxPrice));
             
+            // Trigger input event (press Enter to ensure processing)
+            maxPriceInput.pressEnter();
+            
+            // Move mouse away from input fields to ensure proper page processing
+            LogUtils.logTestStep("Moving mouse away from input fields to allow page processing...");
+            try {
+                // Move mouse to a neutral area (search results container)
+                if (searchResults.size() > 0) {
+                    searchResults.first().hover();
+                } else {
+                    // Fallback: move to page header area
+                    $(By.tagName("body")).hover();
+                }
+            } catch (Exception e) {
+                LogUtils.logTestStep("Mouse move failed, continuing: " + e.getMessage());
+            }
+            
             // Wait for page to process the max price change and auto-reload
             LogUtils.logTestStep("Waiting for page to process maximum price change and reload...");
-            WaitUtils.sleep(3000);
+            WaitUtils.sleep(5000);
             
-            // Wait for filtered results to load
-            waitForPageToLoad();
+            // Wait for filtered results to load with specific focus on price filter results
+            waitForFilteredResultsToLoad(initialResultCount);
             
             LogUtils.logVerificationStep("✓ Hotel price filter applied successfully using input boxes");
             
@@ -523,13 +563,88 @@ public class AgodaSearchResultsPage {
             throw new RuntimeException("Hotel price filter application failed", e);
         }
     }
+    
+    /**
+     * Wait specifically for filtered results to load after applying filters
+     * This method waits for the page to update with new filtered content
+     */
+    @Step("Wait for filtered results to load")
+    private void waitForFilteredResultsToLoad(int previousResultCount) {
+        LogUtils.logTestStep("Waiting for filtered results to load (previous count: " + previousResultCount + ")");
+        
+        try {
+            // First, wait for basic page load
+            waitForPageToLoad();
+            
+            // Additional wait for page processing after mouse movement
+            LogUtils.logTestStep("Waiting for page to process filter changes after mouse movement...");
+            WaitUtils.sleep(3000);
+            
+            // Then wait specifically for filtered content to stabilize
+            LogUtils.logTestStep("Waiting for filtered content to stabilize...");
+            
+            // Wait for any loading overlays to disappear and content to load
+            for (int i = 0; i < 20; i++) {
+                try {
+                    if (loadingIndicator.exists() && loadingIndicator.isDisplayed()) {
+                        LogUtils.logTestStep("Loading indicator still visible, waiting...");
+                        WaitUtils.sleep(1000);
+                        continue;
+                    }
+                } catch (Exception e) {
+                    // Ignore loading indicator issues
+                }
+                
+                // Check if results have stabilized by verifying price elements are loaded
+                ElementsCollection pricesToCheck = displayPrices.size() > 0 ? displayPrices : originalPrices;
+                if (pricesToCheck.size() > 0) {
+                    LogUtils.logTestStep("Price elements found (" + (displayPrices.size() > 0 ? "display prices" : "original prices") + "), checking if they have content...");
+                    
+                    // Verify first few prices have actual content (not empty or loading)
+                    boolean pricesLoaded = true;
+                    for (int j = 0; j < Math.min(3, pricesToCheck.size()); j++) {
+                        try {
+                            String priceText = pricesToCheck.get(j).getText();
+                            if (priceText == null || priceText.trim().isEmpty() || priceText.contains("...") || priceText.equals("Loading...")) {
+                                pricesLoaded = false;
+                                break;
+                            }
+                        } catch (Exception e) {
+                            pricesLoaded = false;
+                            break;
+                        }
+                    }
+                    
+                    if (pricesLoaded) {
+                        LogUtils.logVerificationStep("✓ Filtered results have loaded with " + (displayPrices.size() > 0 ? "display" : "original") + " price data");
+                        
+                        // Additional wait to ensure all filtering and price updates are complete
+                        LogUtils.logTestStep("Final wait to ensure all price data is fully updated...");
+                        WaitUtils.sleep(3000);
+                        
+                        int finalResultCount = getSearchResultCount();
+                        LogUtils.logTestStep("Final result count after filtering: " + finalResultCount);
+                        return;
+                    }
+                }
+                
+                LogUtils.logTestStep("Results not yet stabilized, waiting... (attempt " + (i + 1) + "/20)");
+                WaitUtils.sleep(1000);
+            }
+            
+            LogUtils.logTestStep("⚠ Warning: Filtered results may not be fully loaded after maximum wait time");
+            
+        } catch (Exception e) {
+            LogUtils.logError("Error waiting for filtered results: " + e.getMessage(), e);
+        }
+    }
 
     /**
      * Apply star rating filter
      * @param starRating the star rating to filter by
      */
     /**
-     * Apply star filter using the hotel search page structure with scrolling
+     * Apply star filter using the hotel search page structure with scrolling - with debugging
      * @param starRating the star rating to apply
      */
     @Step("Apply star rating filter: {starRating}")
@@ -537,10 +652,75 @@ public class AgodaSearchResultsPage {
         LogUtils.logTestStep("Applying " + starRating.getValue() + " star rating filter");
         
         try {
-            // Wait for star rating section to be present
-            SelenideElement starSection = $(By.xpath("//h3[contains(text(),'Star rating')]"));
-            WaitUtils.waitForVisible(starSection, Duration.ofSeconds(10));
-            LogUtils.logTestStep("Star rating section found");
+            // Try to find star rating section with different possible texts
+            SelenideElement starSection = null;
+            String[] possibleTexts = {"Star rating", "star rating", "Rating", "Hotel star rating", "Property rating"};
+            
+            for (String text : possibleTexts) {
+                try {
+                    starSection = $(By.xpath("//h3[contains(text(),'" + text + "')]"));
+                    if (starSection.exists()) {
+                        LogUtils.logTestStep("Found star rating section with text: '" + text + "'");
+                        break;
+                    }
+                } catch (Exception e) {
+                    // Continue to next text
+                }
+            }
+            
+            if (starSection == null || !starSection.exists()) {
+                LogUtils.logTestStep("Could not find star rating section header, trying to find filter elements directly");
+                
+                // Debug: List all possible filter elements
+                LogUtils.logTestStep("DEBUG: Looking for all filter-related elements...");
+                
+                // Try different possible star filter selectors
+                String[] possibleSelectors = {
+                    "//label[@data-element-name='search-filter-starratingwithluxury']",
+                    "//input[@name*='star']",
+                    "//input[@id*='star']",
+                    "//label[contains(@class,'star')]",
+                    "//div[contains(@class,'star')]//input",
+                    "//div[contains(@class,'rating')]//input",
+                    "//input[@type='checkbox'][contains(@name,'rating')]",
+                    "//input[@type='checkbox'][contains(@value,'3')]",
+                    "//label[contains(text(),'3')]"
+                };
+                
+                for (String selector : possibleSelectors) {
+                    try {
+                        ElementsCollection elements = $$(By.xpath(selector));
+                        if (elements.size() > 0) {
+                            LogUtils.logTestStep("DEBUG: Found " + elements.size() + " elements with selector: " + selector);
+                            for (int i = 0; i < Math.min(elements.size(), 3); i++) {
+                                try {
+                                    String elementInfo = "Element " + i + ": tag=" + elements.get(i).getTagName() + 
+                                                       ", class=" + elements.get(i).getAttribute("class") + 
+                                                       ", id=" + elements.get(i).getAttribute("id") +
+                                                       ", name=" + elements.get(i).getAttribute("name") +
+                                                       ", value=" + elements.get(i).getAttribute("value") +
+                                                       ", text=" + elements.get(i).getText();
+                                    LogUtils.logTestStep("DEBUG: " + elementInfo);
+                                } catch (Exception ex) {
+                                    LogUtils.logTestStep("DEBUG: Could not get info for element " + i);
+                                }
+                            }
+                        }
+                    } catch (Exception e) {
+                        // Continue to next selector
+                    }
+                }
+                
+                // Try to find any filter containers
+                try {
+                    ElementsCollection filterContainers = $$(By.xpath("//div[contains(@class,'filter')]"));
+                    LogUtils.logTestStep("DEBUG: Found " + filterContainers.size() + " filter containers");
+                } catch (Exception e) {
+                    LogUtils.logTestStep("DEBUG: No filter containers found");
+                }
+                
+                throw new RuntimeException("Could not find star rating section on the page");
+            }
             
             // Scroll to star rating section to ensure it's visible
             LogUtils.logTestStep("Scrolling to star rating section...");
@@ -551,15 +731,36 @@ public class AgodaSearchResultsPage {
             executeJavaScript("window.scrollBy(0, -100);");
             WaitUtils.sleep(500);
             
-            // Build XPath for the specific star rating using data-element-value
+            // Try multiple possible selectors for star filter
             String starValue = String.valueOf(starRating.getValue());
-            String starXPath = "//label[@data-element-name='search-filter-starratingwithluxury' and @data-element-value='" + starValue + "']";
+            String[] starSelectors = {
+                "//label[@data-element-name='search-filter-starratingwithluxury' and @data-element-value='" + starValue + "']",
+                "//input[@value='" + starValue + "' and contains(@name,'star')]",
+                "//input[@value='" + starValue + "' and contains(@name,'rating')]",
+                "//label[contains(text(),'" + starValue + " star')]",
+                "//label[contains(text(),'" + starValue + "')]//input",
+                "//div[contains(@data-value,'" + starValue + "')]//input"
+            };
             
-            LogUtils.logTestStep("Looking for star filter with XPath: " + starXPath);
-            SelenideElement starElement = $(By.xpath(starXPath));
+            SelenideElement starElement = null;
+            String usedSelector = "";
             
-            if (starElement.exists()) {
-                LogUtils.logTestStep("Found " + starRating.getValue() + " star filter element");
+            for (String selector : starSelectors) {
+                try {
+                    LogUtils.logTestStep("Trying selector: " + selector);
+                    starElement = $(By.xpath(selector));
+                    if (starElement.exists()) {
+                        LogUtils.logTestStep("Found star element with selector: " + selector);
+                        usedSelector = selector;
+                        break;
+                    }
+                } catch (Exception e) {
+                    LogUtils.logTestStep("Selector failed: " + selector);
+                }
+            }
+            
+            if (starElement != null && starElement.exists()) {
+                LogUtils.logTestStep("Found " + starRating.getValue() + " star filter element using: " + usedSelector);
                 
                 // Scroll the element into view and wait
                 starElement.scrollIntoView(true);
@@ -581,7 +782,7 @@ public class AgodaSearchResultsPage {
                 LogUtils.logTestStep("Waiting for filtered results to load...");
                 
             } else {
-                LogUtils.logTestStep("✗ Could not find " + starRating.getValue() + " star filter element");
+                LogUtils.logTestStep("✗ Could not find " + starRating.getValue() + " star filter element with any selector");
                 throw new RuntimeException("Star filter element not found for " + starRating.getValue() + " stars");
             }
             
@@ -666,11 +867,15 @@ public class AgodaSearchResultsPage {
         LogUtils.logTestStep("Verifying hotel prices are within range: " + minPrice + " - " + maxPrice);
         
         try {
+            // Use display prices first, fallback to original prices
+            ElementsCollection pricesToCheck = displayPrices.size() > 0 ? displayPrices : originalPrices;
+            LogUtils.logTestStep("Using " + (displayPrices.size() > 0 ? "display prices" : "original prices") + " for verification");
+            
             int validPrices = 0;
-            int totalChecked = Math.min(5, originalPrices.size()); // Check first 5 results
+            int totalChecked = Math.min(5, pricesToCheck.size()); // Check first 5 results
             
             for (int i = 0; i < totalChecked; i++) {
-                String priceText = originalPrices.get(i).getText();
+                String priceText = pricesToCheck.get(i).getText();
                 double price = extractPriceValue(priceText);
                 
                 if (price >= minPrice && price <= maxPrice) {
@@ -693,25 +898,43 @@ public class AgodaSearchResultsPage {
     }
 
     /**
-     * Remove price filter while keeping other filters by removing URL parameters
+     * Remove price filter by clearing the input fields
      */
     @Step("Remove price filter")
     public void removePriceFilter() {
         LogUtils.logTestStep("Removing price filter");
         
         try {
-            // Get current URL and remove price filter parameters
-            String currentUrl = WebDriverRunner.getWebDriver().getCurrentUrl();
-            LogUtils.logTestStep("Current URL: " + currentUrl);
+            // Clear minimum price input
+            LogUtils.logTestStep("Clearing minimum price input");
+            if (minPriceInput.exists()) {
+                minPriceInput.clear();
+                minPriceInput.pressEnter();
+                WaitUtils.sleep(2000);
+            }
             
-            // Remove price filter parameters from URL
-            String newUrl = removePriceParametersFromUrl(currentUrl);
-            LogUtils.logTestStep("Navigating to URL without price filter: " + newUrl);
+            // Clear maximum price input  
+            LogUtils.logTestStep("Clearing maximum price input");
+            if (maxPriceInput.exists()) {
+                maxPriceInput.clear();
+                maxPriceInput.pressEnter();
+                WaitUtils.sleep(2000);
+            }
             
-            // Navigate to the new URL without price filters
-            WebDriverRunner.getWebDriver().get(newUrl);
+            // Move mouse away from input fields
+            LogUtils.logTestStep("Moving mouse away from input fields after clearing...");
+            try {
+                if (searchResults.size() > 0) {
+                    searchResults.first().hover();
+                } else {
+                    $(By.tagName("body")).hover();
+                }
+            } catch (Exception e) {
+                LogUtils.logTestStep("Mouse move failed, continuing: " + e.getMessage());
+            }
             
-            // Wait for page to load
+            // Wait for page to process the filter removal
+            LogUtils.logTestStep("Waiting for page to process filter removal...");
             WaitUtils.sleep(3000);
             
             // Wait for results to be available
@@ -725,33 +948,6 @@ public class AgodaSearchResultsPage {
         }
     }
     
-    /**
-     * Remove price filter parameters from the URL
-     * @param currentUrl the current URL
-     * @return URL without price filter parameters
-     */
-    private String removePriceParametersFromUrl(String currentUrl) {
-        try {
-            // Remove both priceFrom and priceTo parameters
-            String newUrl = currentUrl
-                .replaceAll("[&?]priceFrom=[^&]*", "")
-                .replaceAll("[&?]priceTo=[^&]*", "");
-            
-            // Clean up any double ampersands or question marks at the end
-            newUrl = newUrl.replaceAll("&&", "&").replaceAll("\\?&", "?");
-            
-            // Remove trailing & or ?
-            if (newUrl.endsWith("&") || newUrl.endsWith("?")) {
-                newUrl = newUrl.substring(0, newUrl.length() - 1);
-            }
-            
-            return newUrl;
-        } catch (Exception e) {
-            LogUtils.logError("Failed to construct URL without price filters: " + e.getMessage(), e);
-            return currentUrl; // Return original URL if construction fails
-        }
-    }
-
     /**
      * Verify that destination appears correctly in search results
      * @param expectedDestination the expected destination name
