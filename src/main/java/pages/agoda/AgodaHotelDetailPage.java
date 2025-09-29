@@ -8,15 +8,8 @@ import org.openqa.selenium.By;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.executeJavaScript;
 
-/**
- * Agoda Hotel Detail Page Object
- * Handles hotel detail page interactions and verifications
- */
 public class AgodaHotelDetailPage {
-    
-    // TODO: Update these XPaths after manual capture
-    // Hotel detail elements - PLACEHOLDER XPaths (need manual capture)
-    private final SelenideElement hotelName = $(By.xpath("//h1[@data-testid='hotel-name'] | //h1[contains(@class,'hotel-name')] | //h1[@id='hotel-name']"));
+        private final SelenideElement hotelName = $(By.xpath("//h1[@data-testid='hotel-name'] | //h1[contains(@class,'hotel-name')] | //h1[@id='hotel-name']"));
     private final SelenideElement hotelLocation = $(By.xpath("//span[@data-testid='hotel-location'] | //div[contains(@class,'location')] | //span[contains(@class,'address')]"));
     private final SelenideElement swimmingPoolIndicator = $(By.xpath("//span[contains(text(),'Swimming pool')] | //div[contains(@class,'amenity')][contains(text(),'Pool')] | //i[contains(@class,'pool')]"));
     private final SelenideElement backToResultsButton = $(By.xpath("//button[contains(text(),'Back')] | //a[contains(@class,'back')] | //button[@data-testid='back-button']"));
