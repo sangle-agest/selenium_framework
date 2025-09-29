@@ -29,7 +29,7 @@
         "children": 0
       },
       "filters": {
-        "priceRange": "500000-1000000",
+        "priceRange": "1000000-2000000",
         "starRating": 3,
         "currency": "VND"
       },
@@ -39,27 +39,34 @@
         "filtersApplied": ["price", "star"]
       }
     },
-    "TC03_SearchMultipleDestinations": {
-      "testName": "TC03: Search Multiple Destinations",
-      "description": "Search for hotels in multiple popular destinations",
-      "destinations": [
-        {
-          "name": "Ho Chi Minh City",
-          "checkInDate": "<PLUS_1_MONTHS>",
-          "checkOutDate": "<PLUS_2_DAYS>"
-        },
-        {
-          "name": "Hanoi",
-          "checkInDate": "<PLUS_1_MONTHS>",
-          "checkOutDate": "<PLUS_2_DAYS>"
-        }
-      ],
+    "TC03_SearchFilterAndVerifyHotelDetails": {
+      "testName": "TC03: Search, Filter, and Verify Hotel Details Successfully",
+      "description": "Search for hotels in Da Nang, filter by swimming pool, and verify hotel details",
+      "destination": "Da Nang",
+      "checkInDate": "<NEXT_FRIDAY>",
+      "checkOutDate": "<PLUS_3_DAYS>",
       "occupancy": {
-        "rooms": 1,
-        "adults": 2,
+        "rooms": 2,
+        "adults": 4,
         "children": 0
       },
-      "sortOption": "Highest rating first"
+      "filters": {
+        "facilities": ["Swimming Pool"],
+        "currency": "VND"
+      },
+      "expectedResults": {
+        "minSearchResults": 1,
+        "destination": "Da Nang",
+        "filtersApplied": ["swimming_pool"],
+        "hotelDetailsRequired": ["name", "destination", "swimming_pool"],
+        "reviewCategories": ["Cleanliness", "Facilities", "Service", "Location", "Value for money"]
+      },
+      "actions": {
+        "selectHotelPosition": 5,
+        "hoverHotelPosition": 1,
+        "verifyBackNavigation": true,
+        "verifyReviewPopup": true
+      }
     }
   }
 }

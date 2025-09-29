@@ -254,8 +254,11 @@ public class AgodaHomePage {
     public AgodaSearchResultsPage clickSearchButton() {
         searchButton.click();
         
-        // Handle new tab - switch back to expected tab
-        SwitchTabs.switchToExpectedTab();
+        // Wait for new tab to open
+        WaitUtils.sleep(3000);
+        
+        // Handle new tab - switch to hotel search results tab
+        SwitchTabs.switchToHotelSearchTab();
         
         // Create results page instance and wait for it to load
         AgodaSearchResultsPage resultsPage = new AgodaSearchResultsPage();
@@ -267,9 +270,9 @@ public class AgodaHomePage {
     /**
      * Method 1: Search for destination and handle autocomplete
      */
-    @Step("Search destination: {destination}")
-    public void searchDestination(String destination) {
-        LogUtils.logTestStep("Step 1: Searching for destination - " + destination);
+    @Step("Select destination: {destination}")
+    public void selectDestination(String destination) {
+        LogUtils.logTestStep("Step 1: Selecting destination - " + destination);
         enterDestination(destination);
     }
     
@@ -293,8 +296,27 @@ public class AgodaHomePage {
     }
     
     /**
-     * Method 3: Set occupancy and perform search
+     * Method 3a: Set occupancy only
      */
+    @Step("Set occupancy - Rooms: {rooms}, Adults: {adults}, Children: {children}")
+    public void setOccupancyValues(int rooms, int adults, int children) {
+        LogUtils.logTestStep("Step 3a: Setting occupancy - Rooms: " + rooms + ", Adults: " + adults + ", Children: " + children);
+        setOccupancy(rooms, adults, children);
+    }
+    
+    /**
+     * Method 3b: Click search button and return results page
+     */
+    @Step("Click search button")
+    public AgodaSearchResultsPage clickSearch() {
+        LogUtils.logTestStep("Step 3b: Clicking search button");
+        return clickSearchButton();
+    }
+    
+    /**
+     * Method 3: Set occupancy and perform search (DEPRECATED - split into setOccupancy and clickSearch)
+     */
+    @Deprecated
     @Step("Set occupancy and search - Rooms: {rooms}, Adults: {adults}, Children: {children}")
     public AgodaSearchResultsPage setOccupancyAndSearch(int rooms, int adults, int children) {
         LogUtils.logTestStep("Step 3: Setting occupancy - Rooms: " + rooms + ", Adults: " + adults + ", Children: " + children);
@@ -311,7 +333,7 @@ public class AgodaHomePage {
         LogUtils.logTestStep("Starting complete hotel search process");
         
         // Step 1: Search destination
-        searchDestination(destination);
+        selectDestination(destination);
         
         // Step 2: Select dates
         selectTravelDates(checkInDate, checkOutDate);
@@ -340,33 +362,77 @@ public class AgodaHomePage {
     }
 
     /**
-     * Helper class for tab switching
+     * Helper class for tab switching - Enhanced to prioritize hotel search results page
      */
     private static class SwitchTabs {
-        @Step("Switch to expected search results tab")
-        public static void switchToExpectedTab() {
+        @Step("Switch to hotel search results tab")
+        public static void switchToHotelSearchTab() {
+            String methodName = "SwitchTabs.switchToHotelSearchTab()";
             try {
                 // Get all window handles
                 java.util.Set<String> windowHandles = WebDriverRunner.getWebDriver().getWindowHandles();
+                LogUtils.logTestStep(methodName + " - Found " + windowHandles.size() + " window handles");
                 
                 if (windowHandles.size() > 1) {
-                    // Switch through tabs to find the expected one
+                    // Debug: Log all available tabs
+                    int tabIndex = 1;
+                    for (String windowHandle : windowHandles) {
+                        WebDriverRunner.getWebDriver().switchTo().window(windowHandle);
+                        String currentUrl = WebDriverRunner.getWebDriver().getCurrentUrl();
+                        LogUtils.logTestStep(methodName + " - Tab " + tabIndex + " URL: " + currentUrl);
+                        tabIndex++;
+                    }
+                    
+                    // Priority 1: Look for hotel search results page with "guid=" pattern
                     for (String windowHandle : windowHandles) {
                         WebDriverRunner.getWebDriver().switchTo().window(windowHandle);
                         String currentUrl = WebDriverRunner.getWebDriver().getCurrentUrl();
                         
-                        // Check if this is the expected search results tab
-                        if (currentUrl.contains("agoda.com/activities/search") || 
-                            currentUrl.contains("agoda.com/search")) {
-                            LogUtils.logTestStep("Switched to expected search results tab: " + currentUrl);
+                        if (currentUrl.contains("agoda.com/search?guid=")) {
+                            LogUtils.logTestStep(methodName + " - ✓ Found hotel search tab with guid pattern: " + currentUrl);
                             return;
                         }
                     }
+                    
+                    // Priority 2: Look for hotel search results page with search parameters
+                    for (String windowHandle : windowHandles) {
+                        WebDriverRunner.getWebDriver().switchTo().window(windowHandle);
+                        String currentUrl = WebDriverRunner.getWebDriver().getCurrentUrl();
+                        
+                        if (currentUrl.contains("agoda.com/search?") && 
+                            (currentUrl.contains("city=") || currentUrl.contains("checkIn="))) {
+                            LogUtils.logTestStep(methodName + " - ✓ Found hotel search tab with search parameters: " + currentUrl);
+                            return;
+                        }
+                    }
+                    
+                    // Priority 3: Look for any search page that is NOT activities
+                    for (String windowHandle : windowHandles) {
+                        WebDriverRunner.getWebDriver().switchTo().window(windowHandle);
+                        String currentUrl = WebDriverRunner.getWebDriver().getCurrentUrl();
+                        
+                        if (currentUrl.contains("agoda.com/search") && !currentUrl.contains("activities")) {
+                            LogUtils.logTestStep(methodName + " - ✓ Found non-activities search tab: " + currentUrl);
+                            return;
+                        }
+                    }
+                    
+                    // If no hotel tab found, try to use the most recent tab (last opened)
+                    String lastHandle = null;
+                    for (String windowHandle : windowHandles) {
+                        lastHandle = windowHandle;
+                    }
+                    if (lastHandle != null) {
+                        WebDriverRunner.getWebDriver().switchTo().window(lastHandle);
+                        String currentUrl = WebDriverRunner.getWebDriver().getCurrentUrl();
+                        LogUtils.logTestStep(methodName + " - ⚠ Using last opened tab: " + currentUrl);
+                    }
+                } else {
+                    LogUtils.logTestStep(methodName + " - Only one tab found, staying on current tab");
                 }
                 
-                LogUtils.logTestStep("Staying on current tab");
             } catch (Exception e) {
-                LogUtils.logTestStep("Error switching tabs: " + e.getMessage());
+                LogUtils.logTestStep(methodName + " - Error switching tabs: " + e.getMessage());
             }
         }
     }
